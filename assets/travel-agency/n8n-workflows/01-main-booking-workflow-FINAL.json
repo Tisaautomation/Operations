@@ -1,0 +1,284 @@
+{
+  "name": "Main Booking Workflow - FINAL VERSION",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "shopify-booking",
+        "options": {}
+      },
+      "name": "Shopify Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "shopify-booking-webhook",
+      "notes": "Receives new booking orders from Shopify (NO PAYMENT REQUIRED)"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse Shopify order data\nconst order = items[0].json;\n\nconst bookingData = {\n  bookingId: `BK${Date.now()}`,\n  orderId: order.id,\n  orderNumber: order.order_number,\n  customerName: `${order.customer.first_name} ${order.customer.last_name}`,\n  customerEmail: order.customer.email,\n  customerPhone: order.customer.phone || order.shipping_address?.phone,\n  customerWhatsApp: order.note_attributes?.find(attr => attr.name === 'whatsapp_number')?.value || order.customer.phone,\n  \n  tourName: order.line_items[0].name,\n  tourId: order.line_items[0].product_id,\n  tourDate: order.note_attributes?.find(attr => attr.name === 'tour_date')?.value,\n  numberOfPeople: parseInt(order.line_items[0].quantity) || 1,\n  totalAmount: parseFloat(order.total_price),\n  currency: order.currency,\n  \n  paymentStatus: 'pending_payment',\n  paymentMethod: 'Not selected yet',\n  paymentReceived: false,\n  \n  // Location data\n  pickupLocation: order.note_attributes?.find(attr => attr.name === 'pickup_location')?.value || 'To be confirmed',\n  pickupLatitude: order.note_attributes?.find(attr => attr.name === 'pickup_lat')?.value,\n  pickupLongitude: order.note_attributes?.find(attr => attr.name === 'pickup_lng')?.value,\n  pickupMapUrl: order.note_attributes?.find(attr => attr.name === 'pickup_map_url')?.value,\n  \n  specialRequests: order.note,\n  createdAt: new Date().toISOString(),\n  status: 'pending_confirmation',\n  \n  alternativeLocationOffered: false,\n  alternativeLocation: null,\n  alternativeLocationLat: null,\n  alternativeLocationLng: null,\n  alternativeLocationMapUrl: null\n};\n\nreturn [{ json: bookingData }];"
+      },
+      "name": "Parse Booking Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "notes": "Extracts booking information"
+    },
+    {
+      "parameters": {
+        "functionCode": "const bookingData = items[0].json;\n\nconst providers = [\n  {\n    id: 'provider_1',\n    priority: 1,\n    name: process.env.PROVIDER_1_NAME,\n    lineId: process.env.PROVIDER_1_LINE_ID,\n    email: process.env.PROVIDER_1_EMAIL,\n    active: true\n  },\n  {\n    id: 'provider_2',\n    priority: 2,\n    name: process.env.PROVIDER_2_NAME,\n    lineId: process.env.PROVIDER_2_LINE_ID,\n    email: process.env.PROVIDER_2_EMAIL,\n    active: true\n  },\n  {\n    id: 'provider_3',\n    priority: 3,\n    name: process.env.PROVIDER_3_NAME,\n    lineId: process.env.PROVIDER_3_LINE_ID,\n    email: process.env.PROVIDER_3_EMAIL,\n    active: true\n  }\n];\n\nconst activeProviders = providers.filter(p => p.active).sort((a, b) => a.priority - b.priority);\n\nreturn [{\n  json: {\n    ...bookingData,\n    providers: activeProviders,\n    currentProviderIndex: 0,\n    currentProvider: activeProviders[0],\n    // Generate location selection URL for provider\n    locationSelectionUrl: `${process.env.N8N_HOST}/webhook/select-location?booking=${bookingData.bookingId}`\n  }\n}];"
+      },
+      "name": "Load Provider Priority List",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "notes": "Loads providers and generates location selection URL"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{$json.currentProvider.lineId}}",
+        "message": "🎫 NEW BOOKING REQUEST\\n\\n📋 Booking ID: {{$json.bookingId}}\\n🎯 Tour: {{$json.tourName}}\\n📅 Date: {{$json.tourDate}}\\n👤 Customer: {{$json.customerName}}\\n👥 Guests: {{$json.numberOfPeople}} people\\n\\n📱 WhatsApp: {{$json.customerWhatsApp}}\\n📞 Phone: {{$json.customerPhone}}\\n\\n📍 Pickup Location:\\n{{$json.pickupLocation}}\\n\\n🗺️ View Location:\\n{{$json.pickupMapUrl}}\\n\\n💰 Amount: {{$json.currency}} {{$json.totalAmount}}\\n⚠️ Payment: Will be collected after your confirmation\\n\\n👇 RESPOND BELOW:",
+        "additionalFields": {
+          "quickReply": {
+            "items": [
+              {
+                "type": "action",
+                "action": {
+                  "type": "uri",
+                  "label": "✅ CONFIRM & Set Pickup Time",
+                  "uri": "{{$json.locationSelectionUrl}}&action=confirm"
+                }
+              },
+              {
+                "type": "action",
+                "action": {
+                  "type": "message",
+                  "label": "❌ CANCEL (Fully Booked)",
+                  "text": "CANCEL {{$json.bookingId}}"
+                }
+              },
+              {
+                "type": "action",
+                "action": {
+                  "type": "uri",
+                  "label": "⚠️ Change Pickup Location",
+                  "uri": "{{$json.locationSelectionUrl}}&action=alternative"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "name": "Send LINE Message to Provider",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "lineNotifyOAuth2Api": {
+          "id": "1",
+          "name": "LINE Messaging API"
+        }
+      },
+      "notes": "Sends booking request with action buttons that open web interface"
+    },
+    {
+      "parameters": {
+        "path": "select-location",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Location Selection Web Interface",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [1100, 300],
+      "webhookId": "select-location",
+      "notes": "Serves interactive map interface for provider"
+    },
+    {
+      "parameters": {
+        "respondWith": "html",
+        "responseBody": "={{$json.htmlContent}}",
+        "options": {}
+      },
+      "name": "Serve Location Selection Page",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1300, 300],
+      "notes": "Returns HTML page with map for provider to select location/time"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Generate HTML for location selection interface\nconst params = items[0].json.query;\nconst bookingId = params.booking;\nconst action = params.action; // 'confirm' or 'alternative'\n\n// Fetch booking data from Google Sheets\nconst booking = $node['Fetch Booking Data'].json;\n\nconst html = `\n<!DOCTYPE html>\n<html>\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>${action === 'confirm' ? 'Confirm Booking' : 'Select Alternative Location'}</title>\n    <style>\n        * { margin: 0; padding: 0; box-sizing: border-box; }\n        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }\n        .container { max-width: 600px; margin: 0 auto; background: white; min-height: 100vh; }\n        .header { background: ${action === 'confirm' ? 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' : 'linear-gradient(135deg, #ff9966 0%, #ff5e62 100%)'}; color: white; padding: 20px; text-align: center; }\n        .header h1 { font-size: 24px; margin-bottom: 5px; }\n        .header p { font-size: 14px; opacity: 0.9; }\n        .content { padding: 20px; }\n        .booking-info { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; }\n        .booking-info div { margin: 8px 0; }\n        .booking-info strong { display: inline-block; width: 120px; }\n        .form-group { margin-bottom: 20px; }\n        .form-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #333; }\n        .form-group input, .form-group textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }\n        .form-group textarea { resize: vertical; min-height: 80px; }\n        #map { width: 100%; height: 400px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 15px; }\n        .location-display { background: #e8f5e9; padding: 12px; border-radius: 5px; margin-bottom: 15px; display: none; }\n        .location-display.show { display: block; }\n        .btn { width: 100%; padding: 15px; border: none; border-radius: 5px; font-size: 18px; font-weight: bold; cursor: pointer; color: white; }\n        .btn-confirm { background: #4caf50; }\n        .btn-submit { background: #2196F3; }\n        .btn:active { opacity: 0.8; }\n        .instructions { background: #e3f2fd; padding: 12px; border-radius: 5px; margin-bottom: 20px; font-size: 14px; }\n        .time-input { display: flex; gap: 10px; }\n        .time-input input { flex: 1; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"header\">\n            <h1>${action === 'confirm' ? '✅ Confirm Booking' : '⚠️ Select Alternative Location'}</h1>\n            <p>Booking: ${bookingId}</p>\n        </div>\n        \n        <div class=\"content\">\n            <div class=\"booking-info\">\n                <div><strong>Tour:</strong> ${booking.tourName}</div>\n                <div><strong>Date:</strong> ${booking.tourDate}</div>\n                <div><strong>Customer:</strong> ${booking.customerName}</div>\n                <div><strong>Guests:</strong> ${booking.numberOfPeople} people</div>\n                <div><strong>Amount:</strong> ${booking.currency} ${booking.totalAmount}</div>\n            </div>\n            \n            ${action === 'alternative' ? `\n            <div class=\"instructions\">\n                📍 <strong>Current Location:</strong> ${booking.pickupLocation}<br>\n                Please select a better pickup location with easier access.\n            </div>\n            ` : ''}\n            \n            <form id=\"locationForm\">\n                <input type=\"hidden\" name=\"bookingId\" value=\"${bookingId}\">\n                <input type=\"hidden\" name=\"action\" value=\"${action}\">\n                \n                ${action === 'confirm' ? `\n                <div class=\"form-group\">\n                    <label>⏰ Pickup Time *</label>\n                    <input type=\"time\" \n                           name=\"pickupTime\" \n                           id=\"pickupTime\" \n                           required \n                           placeholder=\"Select pickup time\">\n                    <small style=\"color: #666; margin-top: 5px; display: block;\">Select any time that works for you</small>\n                </div>\n                ` : ''}\n                \n                ${action === 'alternative' ? `\n                <div class=\"form-group\">\n                    <label>📍 Search for Location</label>\n                    <input type=\"text\" \n                           id=\"locationSearch\" \n                           placeholder=\"Search for hotel, landmark, or address...\">\n                </div>\n                \n                <div class=\"form-group\">\n                    <label>🗺️ Select Location on Map (or search above)</label>\n                    <div id=\"map\"></div>\n                    <div id=\"locationDisplay\" class=\"location-display\">\n                        <strong>Selected:</strong> <span id=\"selectedLocation\"></span>\n                    </div>\n                </div>\n                \n                <div class=\"form-group\">\n                    <label>📝 Location Name *</label>\n                    <input type=\"text\" \n                           name=\"locationName\" \n                           id=\"locationName\" \n                           required \n                           placeholder=\"e.g., Starbucks Sukhumvit Soi 11\">\n                </div>\n                \n                <input type=\"hidden\" name=\"latitude\" id=\"latitude\">\n                <input type=\"hidden\" name=\"longitude\" id=\"longitude\">\n                <input type=\"hidden\" name=\"mapUrl\" id=\"mapUrl\">\n                ` : ''}\n                \n                <button type=\"submit\" class=\"btn ${action === 'confirm' ? 'btn-confirm' : 'btn-submit'}\">\n                    ${action === 'confirm' ? '✅ CONFIRM BOOKING' : '✅ UPDATE LOCATION'}\n                </button>\n            </form>\n        </div>\n    </div>\n    \n    <script src=\"https://maps.googleapis.com/maps/api/js?key=${process.env.GOOGLE_MAPS_API_KEY}&libraries=places\"></script>\n    <script>\n        let map, marker, autocomplete;\n        \n        ${action === 'alternative' ? `\n        // Initialize map for alternative location\n        function initMap() {\n            const defaultCenter = { \n                lat: ${booking.pickupLatitude || '13.7563'}, \n                lng: ${booking.pickupLongitude || '100.5018'} \n            };\n            \n            map = new google.maps.Map(document.getElementById('map'), {\n                center: defaultCenter,\n                zoom: 15\n            });\n            \n            marker = new google.maps.Marker({\n                map: map,\n                position: defaultCenter,\n                draggable: true,\n                animation: google.maps.Animation.DROP\n            });\n            \n            // Autocomplete\n            autocomplete = new google.maps.places.Autocomplete(\n                document.getElementById('locationSearch'),\n                { types: ['establishment', 'geocode'] }\n            );\n            \n            autocomplete.addListener('place_changed', function() {\n                const place = autocomplete.getPlace();\n                if (place.geometry) {\n                    map.setCenter(place.geometry.location);\n                    map.setZoom(17);\n                    marker.setPosition(place.geometry.location);\n                    updateLocationFields(place.geometry.location, place.formatted_address || place.name);\n                }\n            });\n            \n            // Click on map\n            map.addListener('click', function(e) {\n                marker.setPosition(e.latLng);\n                reverseGeocode(e.latLng);\n            });\n            \n            // Drag marker\n            marker.addListener('dragend', function(e) {\n                reverseGeocode(e.latLng);\n            });\n        }\n        \n        function reverseGeocode(latLng) {\n            const geocoder = new google.maps.Geocoder();\n            geocoder.geocode({ location: latLng }, function(results, status) {\n                if (status === 'OK' && results[0]) {\n                    updateLocationFields(latLng, results[0].formatted_address);\n                }\n            });\n        }\n        \n        function updateLocationFields(latLng, address) {\n            document.getElementById('latitude').value = latLng.lat();\n            document.getElementById('longitude').value = latLng.lng();\n            document.getElementById('mapUrl').value = \\`https://www.google.com/maps?q=\\${latLng.lat()},\\${latLng.lng()}\\`;\n            document.getElementById('selectedLocation').textContent = address;\n            document.getElementById('locationDisplay').classList.add('show');\n            if (!document.getElementById('locationName').value) {\n                document.getElementById('locationName').value = address;\n            }\n        }\n        \n        window.onload = initMap;\n        ` : ''}\n        \n        // Form submission\n        document.getElementById('locationForm').addEventListener('submit', function(e) {\n            e.preventDefault();\n            \n            const formData = new FormData(this);\n            const data = Object.fromEntries(formData.entries());\n            \n            // Submit to N8N webhook\n            fetch('/webhook/provider-response', {\n                method: 'POST',\n                headers: { 'Content-Type': 'application/json' },\n                body: JSON.stringify(data)\n            })\n            .then(response => response.json())\n            .then(data => {\n                alert('✅ Booking updated successfully! Closing...');\n                window.close();\n            })\n            .catch(error => {\n                alert('Error: ' + error.message);\n            });\n        });\n    </script>\n</body>\n</html>\n`;\n\nreturn [{ json: { htmlContent: html } }];"
+      },
+      "name": "Generate Location Selection HTML",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1100, 450],
+      "notes": "Creates interactive HTML page with map"
+    },
+    {
+      "parameters": {
+        "path": "provider-response",
+        "options": {}
+      },
+      "name": "Provider Response Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [1500, 300],
+      "webhookId": "provider-response",
+      "notes": "Receives form submission from provider"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse provider response\nconst response = items[0].json;\nconst action = response.action;\n\nlet result = {\n  bookingId: response.bookingId,\n  timestamp: new Date().toISOString()\n};\n\nif (action === 'confirm') {\n  result.status = 'confirmed';\n  result.pickupTime = response.pickupTime;\n  result.action = 'confirm';\n} else if (action === 'alternative') {\n  result.status = 'alternative_location_set';\n  result.alternativeLocation = response.locationName;\n  result.alternativeLocationLat = response.latitude;\n  result.alternativeLocationLng = response.longitude;\n  result.alternativeLocationMapUrl = response.mapUrl;\n  result.action = 'alternative';\n}\n\nreturn [{ json: result }];"
+      },
+      "name": "Parse Provider Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1700, 300],
+      "notes": "Parses provider's form submission"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$json.customerEmail}}",
+        "subject": "✅ Booking Confirmed - Payment Required",
+        "emailType": "html",
+        "html": "={{$binary.confirmationEmail.data}}",
+        "options": {}
+      },
+      "name": "Send Confirmation Email with Payment Links",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1900, 200],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Sends confirmation email with all payment options"
+    },
+    {
+      "parameters": {
+        "path": "payment-received",
+        "options": {}
+      },
+      "name": "Payment Received Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 600],
+      "webhookId": "payment-received",
+      "notes": "Triggered when payment is confirmed (Stripe/PayPal webhook or manual update)"
+    },
+    {
+      "parameters": {
+        "mode": "loadTemplate",
+        "templateFile": "/data/templates/payment-confirmation-email.html",
+        "dataPropertyName": "json"
+      },
+      "name": "Load Payment Confirmation Template",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1,
+      "position": [450, 600],
+      "notes": "Loads payment confirmation email template"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$json.customerEmail}}",
+        "subject": "✅ Payment Received - {{$json.tourName}}",
+        "emailType": "html",
+        "html": "={{$binary.paymentConfirmationEmail.data}}",
+        "options": {}
+      },
+      "name": "Send Payment Confirmation Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [650, 600],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Automatically sent when payment is received"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "values": {
+          "paymentReceived": "true",
+          "paymentReceivedAt": "={{new Date().toISOString()}}",
+          "paymentMethod": "={{$json.paymentMethod}}",
+          "paymentStatus": "paid"
+        },
+        "options": {}
+      },
+      "name": "Update Payment Status in Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [650, 750],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Updates booking with payment confirmation"
+    }
+  ],
+  "connections": {
+    "Shopify Webhook Trigger": {
+      "main": [[{"node": "Parse Booking Data", "type": "main", "index": 0}]]
+    },
+    "Parse Booking Data": {
+      "main": [[{"node": "Load Provider Priority List", "type": "main", "index": 0}]]
+    },
+    "Load Provider Priority List": {
+      "main": [[{"node": "Send LINE Message to Provider", "type": "main", "index": 0}]]
+    },
+    "Location Selection Web Interface": {
+      "main": [[{"node": "Generate Location Selection HTML", "type": "main", "index": 0}]]
+    },
+    "Generate Location Selection HTML": {
+      "main": [[{"node": "Serve Location Selection Page", "type": "main", "index": 0}]]
+    },
+    "Provider Response Webhook": {
+      "main": [[{"node": "Parse Provider Response", "type": "main", "index": 0}]]
+    },
+    "Parse Provider Response": {
+      "main": [[{"node": "Send Confirmation Email with Payment Links", "type": "main", "index": 0}]]
+    },
+    "Payment Received Webhook": {
+      "main": [[{"node": "Load Payment Confirmation Template", "type": "main", "index": 0}]]
+    },
+    "Load Payment Confirmation Template": {
+      "main": [[
+        {"node": "Send Payment Confirmation Email", "type": "main", "index": 0},
+        {"node": "Update Payment Status in Sheets", "type": "main", "index": 0}
+      ]]
+    }
+  },
+  "settings": {
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 3600,
+    "timezone": "Asia/Bangkok"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "3.0"
+}

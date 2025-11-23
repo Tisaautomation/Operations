@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Financial Report</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 700px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0;">💰 Daily Financial Report</h1>
+        <p style="color: #f0f0f0; margin: 10px 0 0 0; font-size: 18px;">{{date}}</p>
+    </div>
+
+    <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
+
+        <p style="font-size: 18px;"><strong>Evening Report for {{providerName}}</strong></p>
+
+        <p>Here's your financial summary for today's completed tours.</p>
+
+        <div style="background: #e8f5e9; padding: 25px; border-radius: 8px; margin: 20px 0; border: 2px solid #4caf50;">
+            <h3 style="color: #2e7d32; margin-top: 0; text-align: center;">💵 Today's Revenue Summary</h3>
+
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+                <tr style="background: #ffffff;">
+                    <td style="padding: 12px; font-weight: bold; border-bottom: 1px solid #e0e0e0;">Total Revenue Today:</td>
+                    <td style="padding: 12px; text-align: right; font-size: 24px; font-weight: bold; color: #2e7d32; border-bottom: 1px solid #e0e0e0;">{{currency}}{{totalRevenue}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; font-weight: bold; border-bottom: 1px solid #e0e0e0;">Number of Completed Tours:</td>
+                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; border-bottom: 1px solid #e0e0e0;">{{completedTours}}</td>
+                </tr>
+                <tr style="background: #ffffff;">
+                    <td style="padding: 12px; font-weight: bold; border-bottom: 1px solid #e0e0e0;">Total Customers Served:</td>
+                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; border-bottom: 1px solid #e0e0e0;">{{totalCustomers}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; font-weight: bold;">Average Revenue per Tour:</td>
+                    <td style="padding: 12px; text-align: right; font-size: 18px; font-weight: bold; color: #1976d2;">{{currency}}{{averageRevenue}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="background: #e3f2fd; padding: 25px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #1976d2; margin-top: 0;">💳 Payment Breakdown</h3>
+
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #2196F3; color: white;">
+                        <th style="padding: 10px; text-align: left;">Payment Method</th>
+                        <th style="padding: 10px; text-align: center;">Count</th>
+                        <th style="padding: 10px; text-align: right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#each paymentBreakdown}}
+                    <tr style="background: {{#if @odd}}#f8f9fa{{else}}#ffffff{{/if}};">
+                        <td style="padding: 10px; border-bottom: 1px solid #e0e0e0;">{{this.method}}</td>
+                        <td style="padding: 10px; text-align: center; border-bottom: 1px solid #e0e0e0;">{{this.count}}</td>
+                        <td style="padding: 10px; text-align: right; font-weight: bold; border-bottom: 1px solid #e0e0e0;">{{../currency}}{{this.amount}}</td>
+                    </tr>
+                    {{/each}}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="background: #fff3e0; padding: 25px; border-radius: 8px; margin: 20px 0; border: 2px solid #ff9800;">
+            <h3 style="color: #e65100; margin-top: 0;">🧮 Commission Calculation</h3>
+
+            <table style="width: 100%; border-collapse: collapse; margin: 10px 0;">
+                <tr style="background: #ffffff;">
+                    <td style="padding: 12px; font-weight: bold; border-bottom: 1px solid #e0e0e0;">Gross Revenue:</td>
+                    <td style="padding: 12px; text-align: right; font-size: 18px; font-weight: bold; border-bottom: 1px solid #e0e0e0;">{{currency}}{{totalRevenue}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; font-weight: bold; border-bottom: 1px solid #e0e0e0;">Commission Rate:</td>
+                    <td style="padding: 12px; text-align: right; font-weight: bold; border-bottom: 1px solid #e0e0e0;">{{commissionRate}}%</td>
+                </tr>
+                <tr style="background: #ffffff;">
+                    <td style="padding: 12px; font-weight: bold; border-bottom: 2px solid #ff9800;">Our Commission:</td>
+                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #e65100; border-bottom: 2px solid #ff9800;">{{currency}}{{commissionAmount}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 12px; font-weight: bold;">Provider's Share:</td>
+                    <td style="padding: 12px; text-align: right; font-size: 20px; font-weight: bold; color: #2e7d32;">{{currency}}{{providerShare}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="background: {{#if owedToProvider}}#e8f5e9{{else}}#ffebee{{/if}}; padding: 25px; border-radius: 8px; margin: 20px 0; border: 3px solid {{#if owedToProvider}}#4caf50{{else}}#f44336{{/if}}; text-align: center;">
+            <h3 style="color: {{#if owedToProvider}}#2e7d32{{else}}#c62828{{/if}}; margin-top: 0;">💸 Payment Settlement</h3>
+
+            {{#if owedToProvider}}
+            <p style="font-size: 16px; margin: 15px 0;">
+                <strong>{{businessName}} owes {{providerName}}:</strong>
+            </p>
+            <p style="font-size: 36px; font-weight: bold; color: #4caf50; margin: 10px 0;">
+                {{currency}}{{settlementAmount}}
+            </p>
+            <p style="color: #666; margin: 15px 0;">
+                Payment will be processed according to your payment terms: <strong>{{paymentTerms}}</strong>
+            </p>
+            {{else}}
+            <p style="font-size: 16px; margin: 15px 0;">
+                <strong>{{providerName}} owes {{businessName}}:</strong>
+            </p>
+            <p style="font-size: 36px; font-weight: bold; color: #f44336; margin: 10px 0;">
+                {{currency}}{{settlementAmount}}
+            </p>
+            <p style="color: #666; margin: 15px 0;">
+                Payment due according to your payment terms: <strong>{{paymentTerms}}</strong>
+            </p>
+            {{/if}}
+        </div>
+
+        <div style="margin: 30px 0;">
+            <h3 style="color: #1a2a6c; border-bottom: 2px solid #2196F3; padding-bottom: 10px;">📋 Tour Details</h3>
+
+            {{#each tourDetails}}
+            <div style="background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #2196F3;">
+                <table style="width: 100%;">
+                    <tr>
+                        <td style="padding: 5px 0; font-weight: bold; width: 150px;">Tour:</td>
+                        <td style="padding: 5px 0;">{{this.tourName}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; font-weight: bold;">Time:</td>
+                        <td style="padding: 5px 0;">{{this.pickupTime}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; font-weight: bold;">Customer:</td>
+                        <td style="padding: 5px 0;">{{this.customerName}} ({{this.numberOfPeople}} pax)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; font-weight: bold;">Revenue:</td>
+                        <td style="padding: 5px 0; font-weight: bold; color: #2e7d32;">{{../currency}}{{this.amount}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; font-weight: bold;">Payment:</td>
+                        <td style="padding: 5px 0;">{{this.paymentMethod}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 5px 0; font-weight: bold;">Status:</td>
+                        <td style="padding: 5px 0;">
+                            <span style="background: #4caf50; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px;">✓ COMPLETED</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            {{/each}}
+
+        </div>
+
+        <div style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>📊 Week-to-Date Summary:</strong></p>
+            <ul style="margin: 10px 0;">
+                <li><strong>Total Revenue This Week:</strong> {{currency}}{{weekRevenue}}</li>
+                <li><strong>Total Tours This Week:</strong> {{weekTours}}</li>
+                <li><strong>Average Daily Revenue:</strong> {{currency}}{{averageDailyRevenue}}</li>
+            </ul>
+        </div>
+
+        <div style="margin: 30px 0; text-align: center;">
+            <a href="{{dashboardUrl}}" style="display: inline-block; background: #2196F3; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 5px;">View Full Dashboard</a>
+            <a href="{{invoiceUrl}}" style="display: inline-block; background: #4caf50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 5px;">Download Invoice</a>
+        </div>
+
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h4 style="color: #1a2a6c; margin-top: 0;">💡 Questions about this report?</h4>
+            <p style="margin: 5px 0;">Contact our finance team:</p>
+            <p style="margin: 5px 0;">📞 {{businessPhone}} | 📧 {{businessEmail}}</p>
+        </div>
+
+        <p style="text-align: center; margin-top: 30px; color: #2e7d32; font-size: 18px; font-weight: bold;">
+            Thank you for partnering with us! 🤝
+        </p>
+
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+
+        <div style="text-align: center; color: #666; font-size: 14px;">
+            <p><strong>{{businessName}}</strong></p>
+            <p>📞 {{businessPhone}} | 📧 {{businessEmail}}</p>
+            <p>🌐 <a href="{{websiteUrl}}" style="color: #2196F3; text-decoration: none;">{{websiteUrl}}</a></p>
+            <p style="margin-top: 15px; font-size: 12px; color: #999;">
+                Report generated: {{reportGeneratedTime}}<br>
+                This is an automated daily financial report<br>
+                All amounts are in {{currency}} and include applicable taxes
+            </p>
+        </div>
+    </div>
+</body>
+</html>

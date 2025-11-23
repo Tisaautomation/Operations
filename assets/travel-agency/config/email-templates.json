@@ -1,0 +1,34 @@
+{
+  "acknowledgment": {
+    "subject": "Booking Request Received - {{tourName}}",
+    "template": "acknowledgment-email.html"
+  },
+  "confirmation": {
+    "subject": "Booking Confirmed - {{tourName}} on {{tourDate}}",
+    "template": "confirmation-email.html"
+  },
+  "rejection": {
+    "subject": "Alternative Tour Options - {{tourName}}",
+    "template": "rejection-email.html"
+  },
+  "voucher": {
+    "subject": "Your Tour Voucher - {{tourName}} Tomorrow!",
+    "template": "voucher-template.html"
+  },
+  "reminder": {
+    "subject": "Tour Reminder - We'll Call You in 30 Minutes!",
+    "template": "reminder-email.html"
+  },
+  "provider_morning_report": {
+    "subject": "Daily Schedule - {{date}} - {{customerCount}} Customers",
+    "template": "provider-morning-report.html"
+  },
+  "provider_evening_report": {
+    "subject": "Daily Financial Report - {{date}}",
+    "template": "provider-evening-report.html"
+  },
+  "admin_daily_summary": {
+    "subject": "Daily Business Summary - {{date}}",
+    "template": "admin-daily-summary.html"
+  }
+}

@@ -1,0 +1,547 @@
+{
+  "name": "Main Booking Workflow - Shopify to Provider",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "shopify-booking",
+        "options": {}
+      },
+      "name": "Shopify Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "shopify-booking-webhook",
+      "notes": "Receives new booking orders from Shopify"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse Shopify order data\nconst order = items[0].json;\n\nconst bookingData = {\n  bookingId: `BK${Date.now()}`,\n  orderId: order.id,\n  orderNumber: order.order_number,\n  customerName: `${order.customer.first_name} ${order.customer.last_name}`,\n  customerEmail: order.customer.email,\n  customerPhone: order.customer.phone || order.shipping_address?.phone,\n  tourName: order.line_items[0].name,\n  tourId: order.line_items[0].product_id,\n  tourDate: order.note_attributes?.find(attr => attr.name === 'tour_date')?.value,\n  numberOfPeople: parseInt(order.line_items[0].quantity) || 1,\n  totalAmount: parseFloat(order.total_price),\n  currency: order.currency,\n  paymentMethod: order.payment_gateway_names[0] || 'Pending',\n  paymentStatus: order.financial_status,\n  isPaid: order.financial_status === 'paid',\n  specialRequests: order.note,\n  createdAt: new Date().toISOString(),\n  status: 'pending_confirmation',\n  // Extract custom fields if needed\n  pickupLocation: order.note_attributes?.find(attr => attr.name === 'pickup_location')?.value || 'To be confirmed',\n};\n\nreturn [{ json: bookingData }];"
+      },
+      "name": "Parse Booking Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "notes": "Extracts and formats booking information from Shopify order"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Load provider configuration\nconst bookingData = items[0].json;\n\n// This would normally load from your config file\n// For now, we'll set it in workflow settings\nconst providers = [\n  {\n    id: 'provider_1',\n    priority: 1,\n    name: $node['Set Providers Config'].json.provider1_name,\n    lineId: $node['Set Providers Config'].json.provider1_line_id,\n    email: $node['Set Providers Config'].json.provider1_email,\n    active: true\n  },\n  {\n    id: 'provider_2',\n    priority: 2,\n    name: $node['Set Providers Config'].json.provider2_name,\n    lineId: $node['Set Providers Config'].json.provider2_line_id,\n    email: $node['Set Providers Config'].json.provider2_email,\n    active: true\n  },\n  {\n    id: 'provider_3',\n    priority: 3,\n    name: $node['Set Providers Config'].json.provider3_name,\n    lineId: $node['Set Providers Config'].json.provider3_line_id,\n    email: $node['Set Providers Config'].json.provider3_email,\n    active: true\n  }\n];\n\n// Sort by priority and get active providers\nconst activeProviders = providers\n  .filter(p => p.active)\n  .sort((a, b) => a.priority - b.priority);\n\nreturn [{\n  json: {\n    ...bookingData,\n    providers: activeProviders,\n    currentProviderIndex: 0,\n    currentProvider: activeProviders[0]\n  }\n}];"
+      },
+      "name": "Load Provider Priority List",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "notes": "Loads provider list sorted by priority"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "provider1_name",
+              "value": "={{$env.PROVIDER_1_NAME}}"
+            },
+            {
+              "name": "provider1_line_id",
+              "value": "={{$env.PROVIDER_1_LINE_ID}}"
+            },
+            {
+              "name": "provider1_email",
+              "value": "={{$env.PROVIDER_1_EMAIL}}"
+            },
+            {
+              "name": "provider2_name",
+              "value": "={{$env.PROVIDER_2_NAME}}"
+            },
+            {
+              "name": "provider2_line_id",
+              "value": "={{$env.PROVIDER_2_LINE_ID}}"
+            },
+            {
+              "name": "provider2_email",
+              "value": "={{$env.PROVIDER_2_EMAIL}}"
+            },
+            {
+              "name": "provider3_name",
+              "value": "={{$env.PROVIDER_3_NAME}}"
+            },
+            {
+              "name": "provider3_line_id",
+              "value": "={{$env.PROVIDER_3_LINE_ID}}"
+            },
+            {
+              "name": "provider3_email",
+              "value": "={{$env.PROVIDER_3_EMAIL}}"
+            }
+          ]
+        }
+      },
+      "name": "Set Providers Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [450, 450],
+      "notes": "Loads provider configuration from environment variables"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{$json.currentProvider.lineId}}",
+        "message": "🎫 NEW BOOKING REQUEST\\n\\nBooking ID: {{$json.bookingId}}\\nTour: {{$json.tourName}}\\nDate: {{$json.tourDate}}\\nCustomer: {{$json.customerName}}\\nGuests: {{$json.numberOfPeople}} people\\nAmount: {{$json.currency}} {{$json.totalAmount}}\\n\\nPlease respond with:\\n1️⃣ CONFIRM + pickup time + location\\n2️⃣ CANCEL (if fully booked)\\n\\nExample:\\nCONFIRM 09:00 AM, Hotel Lobby",
+        "additionalFields": {}
+      },
+      "name": "Send LINE Message to Provider",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "lineNotifyOAuth2Api": {
+          "id": "1",
+          "name": "LINE Messaging API"
+        }
+      },
+      "notes": "Sends booking request via LINE to current priority provider"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$json.customerEmail}}",
+        "subject": "Booking Request Received - {{$json.tourName}}",
+        "emailType": "html",
+        "html": "={{$binary.acknowledgmentEmail.data}}",
+        "options": {}
+      },
+      "name": "Send Acknowledgment Email to Customer",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [850, 450],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Sends immediate acknowledgment to customer"
+    },
+    {
+      "parameters": {
+        "mode": "loadTemplate",
+        "templateFile": "/data/templates/acknowledgment-email.html",
+        "dataPropertyName": "json"
+      },
+      "name": "Load Acknowledgment Template",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1,
+      "position": [650, 450],
+      "notes": "Loads and populates acknowledgment email template"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        }
+      },
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [850, 600],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Logs booking data to Google Sheets for tracking and analysis"
+    },
+    {
+      "parameters": {
+        "path": "provider-response",
+        "options": {}
+      },
+      "name": "LINE Provider Response Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [1100, 300],
+      "webhookId": "line-provider-response",
+      "notes": "Receives responses from providers via LINE"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse provider response from LINE message\nconst message = items[0].json.events[0].message.text.toUpperCase();\nconst bookingId = items[0].json.events[0].message.text.match(/BK\\d+/)?.[0];\n\n// Retrieve booking data from storage (you'd use a database in production)\n// For this example, we'll assume it's passed through\nconst bookingData = $input.first().json;\n\nlet response = {\n  bookingId: bookingId,\n  providerId: items[0].json.events[0].source.userId,\n  messageText: message,\n  timestamp: new Date().toISOString()\n};\n\nif (message.includes('CONFIRM')) {\n  // Parse confirmation details\n  const timeMatch = message.match(/(\\d{1,2}:\\d{2}\\s?(?:AM|PM))/i);\n  const locationMatch = message.split(/CONFIRM/i)[1]?.split(/,(.+)/)?.[1]?.trim();\n  \n  response.status = 'confirmed';\n  response.pickupTime = timeMatch ? timeMatch[0] : 'TBD';\n  response.pickupLocation = locationMatch || 'TBD';\n} else if (message.includes('CANCEL') || message.includes('FULLY BOOKED')) {\n  response.status = 'rejected';\n  response.reason = 'Fully booked';\n} else {\n  response.status = 'unclear';\n}\n\nreturn [{ json: { ...bookingData, providerResponse: response } }];"
+      },
+      "name": "Parse Provider Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1300, 300],
+      "notes": "Parses provider's LINE response (CONFIRM or CANCEL)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.providerResponse.status}}",
+              "value2": "confirmed"
+            }
+          ]
+        }
+      },
+      "name": "Check Response Type",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1500, 300],
+      "notes": "Routes based on provider response: confirmed or rejected"
+    },
+    {
+      "parameters": {
+        "mode": "loadTemplate",
+        "templateFile": "/data/templates/confirmation-email.html",
+        "dataPropertyName": "json"
+      },
+      "name": "Load Confirmation Template",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1,
+      "position": [1700, 200],
+      "notes": "Loads confirmation email template"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$json.customerEmail}}",
+        "subject": "Booking Confirmed - {{$json.tourName}}",
+        "emailType": "html",
+        "html": "={{$binary.confirmationEmail.data}}",
+        "options": {}
+      },
+      "name": "Send Confirmation Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1900, 200],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Sends confirmation email to customer with all details"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "options": {}
+      },
+      "name": "Update Booking Status - Confirmed",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [1900, 350],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Updates booking status to confirmed in Google Sheets"
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "create",
+        "firstName": "={{$json.customerName.split(' ')[0]}}",
+        "lastName": "={{$json.customerName.split(' ').slice(1).join(' ')}}",
+        "email": "={{$json.customerEmail}}",
+        "additionalFields": {
+          "phone": "={{$json.customerPhone}}",
+          "customFields": {
+            "Last_Booking_Date": "={{$json.tourDate}}",
+            "Last_Tour": "={{$json.tourName}}",
+            "Total_Bookings": 1,
+            "Customer_Status": "Active"
+          }
+        }
+      },
+      "name": "Create/Update Zoho CRM Contact",
+      "type": "n8n-nodes-base.zohoCrm",
+      "typeVersion": 1,
+      "position": [1900, 500],
+      "credentials": {
+        "zohoCrmOAuth2Api": {
+          "id": "4",
+          "name": "Zoho CRM OAuth2"
+        }
+      },
+      "notes": "Creates or updates customer in Zoho CRM"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Check if there are more providers to try\nconst data = items[0].json;\nconst currentIndex = data.currentProviderIndex;\nconst providers = data.providers;\n\nif (currentIndex + 1 < providers.length) {\n  // Try next provider\n  return [{\n    json: {\n      ...data,\n      currentProviderIndex: currentIndex + 1,\n      currentProvider: providers[currentIndex + 1],\n      tryNextProvider: true\n    }\n  }];\n} else {\n  // All providers fully booked\n  return [{\n    json: {\n      ...data,\n      tryNextProvider: false,\n      allProvidersBooked: true\n    }\n  }];\n}"
+      },
+      "name": "Check Next Provider",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1700, 400],
+      "notes": "Checks if there's another provider to try"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.tryNextProvider}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "More Providers Available?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1900, 400],
+      "notes": "Decides whether to try next provider or send rejection"
+    },
+    {
+      "parameters": {
+        "mode": "loadTemplate",
+        "templateFile": "/data/templates/rejection-email.html",
+        "dataPropertyName": "json"
+      },
+      "name": "Load Rejection Template",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1,
+      "position": [2100, 500],
+      "notes": "Loads rejection email with alternatives"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$json.customerEmail}}",
+        "subject": "Alternative Tour Options - {{$json.tourName}}",
+        "emailType": "html",
+        "html": "={{$binary.rejectionEmail.data}}",
+        "options": {}
+      },
+      "name": "Send Rejection Email with Alternatives",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2300, 500],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Sends rejection email with alternative dates/tours"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "options": {}
+      },
+      "name": "Update Booking Status - Rejected",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [2300, 650],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Updates booking status to rejected in Google Sheets"
+    }
+  ],
+  "connections": {
+    "Shopify Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Booking Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Booking Data": {
+      "main": [
+        [
+          {
+            "node": "Set Providers Config",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Load Provider Priority List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Provider Priority List": {
+      "main": [
+        [
+          {
+            "node": "Send LINE Message to Provider",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Load Acknowledgment Template",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Acknowledgment Template": {
+      "main": [
+        [
+          {
+            "node": "Send Acknowledgment Email to Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LINE Provider Response Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Provider Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Provider Response": {
+      "main": [
+        [
+          {
+            "node": "Check Response Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Response Type": {
+      "main": [
+        [
+          {
+            "node": "Load Confirmation Template",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Next Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Confirmation Template": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Booking Status - Confirmed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create/Update Zoho CRM Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Next Provider": {
+      "main": [
+        [
+          {
+            "node": "More Providers Available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "More Providers Available?": {
+      "main": [
+        [
+          {
+            "node": "Send LINE Message to Provider",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Load Rejection Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Rejection Template": {
+      "main": [
+        [
+          {
+            "node": "Send Rejection Email with Alternatives",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Booking Status - Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 3600,
+    "timezone": "America/New_York"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

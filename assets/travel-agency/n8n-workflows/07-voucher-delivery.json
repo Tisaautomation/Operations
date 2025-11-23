@@ -1,0 +1,409 @@
+{
+  "name": "Voucher Delivery (Day Before Tour)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger - 10:00 AM Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notes": "Triggers every day at 10:00 AM to send vouchers for tomorrow's tours"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "options": {}
+      },
+      "name": "Fetch All Confirmed Bookings",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [450, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Retrieves all confirmed bookings"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Filter for tomorrow's confirmed bookings that need vouchers\nconst now = new Date();\nconst tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);\n\nconst allBookings = items.map(item => item.json);\n\n// Filter for tomorrow's confirmed bookings\nconst tomorrowTours = allBookings.filter(booking => {\n  const bookingDate = new Date(booking.tourDate);\n  bookingDate.setHours(0, 0, 0, 0);\n  \n  // Check if booking is for tomorrow and confirmed\n  if (bookingDate.getTime() !== tomorrow.getTime() || booking.status !== 'confirmed') {\n    return false;\n  }\n  \n  // Check if voucher already sent\n  if (booking.voucherSent === 'true' || booking.voucherSent === true) {\n    return false;\n  }\n  \n  return true;\n});\n\n// Enhance data for voucher template\nconst enhancedTours = tomorrowTours.map(tour => {\n  return {\n    ...tour,\n    issueDate: new Date().toLocaleDateString('en-US', { \n      year: 'numeric', \n      month: 'long', \n      day: 'numeric' \n    }),\n    isPaid: tour.paymentStatus === 'paid' || tour.isPaid === 'true',\n    businessName: process.env.BUSINESS_NAME || 'Your Travel Agency',\n    businessPhone: process.env.BUSINESS_PHONE || '',\n    businessEmail: process.env.BUSINESS_EMAIL || '',\n    websiteUrl: process.env.BUSINESS_WEBSITE || ''\n  };\n});\n\nreturn enhancedTours.map(tour => ({ json: tour }));"
+      },
+      "name": "Filter Tomorrow's Tours Needing Vouchers",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "notes": "Identifies tomorrow's tours that need vouchers sent"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json.length}}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "name": "Any Vouchers to Send?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "notes": "Checks if there are any vouchers to send"
+    },
+    {
+      "parameters": {
+        "mode": "loadTemplate",
+        "templateFile": "/data/templates/voucher-template.html",
+        "dataPropertyName": "json"
+      },
+      "name": "Load Voucher Template",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "notes": "Loads and populates voucher template with booking details"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "fileContent": "={{$binary.voucher.data}}",
+        "fileName": "Tour-Voucher-{{$json.bookingId}}.pdf",
+        "options": {
+          "format": "A4",
+          "printBackground": true,
+          "margin": {
+            "top": "10mm",
+            "right": "10mm",
+            "bottom": "10mm",
+            "left": "10mm"
+          }
+        }
+      },
+      "name": "Generate PDF Voucher",
+      "type": "n8n-nodes-base.htmlToPdf",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "notes": "Converts HTML voucher to PDF"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "fileId": "={{$env.GOOGLE_DRIVE_FOLDER_ID}}",
+        "fileName": "Voucher-{{$json.bookingId}}-{{$json.customerName}}.pdf",
+        "binaryData": true,
+        "options": {}
+      },
+      "name": "Upload Voucher to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1450, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "7",
+          "name": "Google Drive OAuth2"
+        }
+      },
+      "notes": "Backs up voucher to Google Drive"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$json.customerEmail}}",
+        "subject": "🎫 Your Tour Voucher - {{$json.tourName}} Tomorrow!",
+        "emailType": "html",
+        "html": "={{$binary.voucher.data}}",
+        "options": {
+          "attachments": [
+            {
+              "binaryPropertyName": "voucherPdf",
+              "fileName": "Tour-Voucher-{{$json.bookingId}}.pdf"
+            }
+          ]
+        }
+      },
+      "name": "Email Voucher to Customer",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1450, 450],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Sends voucher email with PDF attachment to customer"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "values": {
+          "voucherSent": "true",
+          "voucherSentAt": "={{new Date().toISOString()}}",
+          "voucherUrl": "={{$node['Upload Voucher to Google Drive'].json.webViewLink}}"
+        },
+        "options": {
+          "whereClause": "bookingId = '{{$json.bookingId}}'"
+        }
+      },
+      "name": "Mark Voucher as Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [1650, 450],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Updates booking record to prevent duplicate vouchers"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{$json.customerPhone}}",
+        "from": "={{$env.BUSINESS_PHONE}}",
+        "message": "🎫 Your Tour Voucher is Ready!\\n\\nHello {{$json.customerName}},\\n\\nYour tour voucher for {{$json.tourName}} tomorrow has been sent to your email ({{$json.customerEmail}}).\\n\\n📧 Please check your email and save the voucher\\n⏰ Pickup: {{$json.pickupTime}}\\n📍 Location: {{$json.pickupLocation}}\\n\\nSee you tomorrow! 🌟\\n\\n{{$env.BUSINESS_NAME}}",
+        "additionalFields": {}
+      },
+      "name": "Send SMS Notification",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1650, 600],
+      "credentials": {
+        "twilioApi": {
+          "id": "6",
+          "name": "Twilio API"
+        }
+      },
+      "notes": "Sends SMS to notify customer about voucher email"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{$json.providerLineId}}",
+        "message": "📄 VOUCHER SENT\\n\\nBooking: {{$json.bookingId}}\\nCustomer: {{$json.customerName}}\\nTour: {{$json.tourName}}\\nDate: {{$json.tourDate}}\\nPickup: {{$json.pickupTime}}\\n\\nVoucher delivered to customer for tomorrow's tour.",
+        "additionalFields": {}
+      },
+      "name": "Notify Provider via LINE",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [1650, 750],
+      "credentials": {
+        "lineNotifyOAuth2Api": {
+          "id": "1",
+          "name": "LINE Messaging API"
+        }
+      },
+      "notes": "Notifies provider that voucher was sent to customer"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "VoucherLog!A:Z",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        }
+      },
+      "name": "Log Voucher Delivery",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [1850, 600],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Logs voucher delivery for tracking"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Create summary for admin\nconst allVouchers = items.map(item => item.json);\n\nconst summary = {\n  date: new Date().toLocaleDateString('en-US', { \n    year: 'numeric', \n    month: 'long', \n    day: 'numeric' \n  }),\n  tomorrowDate: new Date(Date.now() + 86400000).toLocaleDateString('en-US', { \n    year: 'numeric', \n    month: 'long', \n    day: 'numeric' \n  }),\n  totalVouchersSent: allVouchers.length,\n  vouchers: allVouchers.map(v => ({\n    bookingId: v.bookingId,\n    customerName: v.customerName,\n    tourName: v.tourName,\n    pickupTime: v.pickupTime\n  })),\n  reportGeneratedTime: new Date().toLocaleString()\n};\n\nreturn [{ json: summary }];"
+      },
+      "name": "Create Admin Summary",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1050, 600],
+      "notes": "Creates summary for business owner"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$env.BUSINESS_EMAIL}}",
+        "subject": "📄 Vouchers Sent - {{$json.totalVouchersSent}} for {{$json.tomorrowDate}}",
+        "emailType": "html",
+        "html": "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'><h2 style='color: #2e7d32;'>📄 Daily Voucher Delivery Report</h2><p><strong>Report Date:</strong> {{$json.date}}</p><p><strong>Tour Date:</strong> {{$json.tomorrowDate}}</p><p><strong>Total Vouchers Sent:</strong> {{$json.totalVouchersSent}}</p><h3>Vouchers Delivered:</h3><ul>{{#each vouchers}}<li><strong>{{this.bookingId}}:</strong> {{this.customerName}} - {{this.tourName}} ({{this.pickupTime}})</li>{{/each}}</ul><p style='font-size: 12px; color: #666;'>Report generated: {{$json.reportGeneratedTime}}</p></div>",
+        "options": {}
+      },
+      "name": "Send Admin Summary",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 600],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Sends summary to business owner"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - 10:00 AM Daily": {
+      "main": [
+        [
+          {
+            "node": "Fetch All Confirmed Bookings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch All Confirmed Bookings": {
+      "main": [
+        [
+          {
+            "node": "Filter Tomorrow's Tours Needing Vouchers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Tomorrow's Tours Needing Vouchers": {
+      "main": [
+        [
+          {
+            "node": "Any Vouchers to Send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Vouchers to Send?": {
+      "main": [
+        [
+          {
+            "node": "Load Voucher Template",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Admin Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Voucher Template": {
+      "main": [
+        [
+          {
+            "node": "Generate PDF Voucher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate PDF Voucher": {
+      "main": [
+        [
+          {
+            "node": "Upload Voucher to Google Drive",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Email Voucher to Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Voucher to Customer": {
+      "main": [
+        [
+          {
+            "node": "Mark Voucher as Sent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send SMS Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify Provider via LINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Voucher as Sent": {
+      "main": [
+        [
+          {
+            "node": "Log Voucher Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Admin Summary": {
+      "main": [
+        [
+          {
+            "node": "Send Admin Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 3600,
+    "timezone": "America/New_York"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

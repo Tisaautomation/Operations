@@ -1,0 +1,546 @@
+{
+  "name": "Main Booking Workflow - Updated with Payment Links & Location",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "shopify-booking",
+        "options": {}
+      },
+      "name": "Shopify Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "shopify-booking-webhook",
+      "notes": "Receives new booking orders from Shopify (NO PAYMENT REQUIRED)"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse Shopify order data - NO PAYMENT COLLECTED YET\nconst order = items[0].json;\n\nconst bookingData = {\n  bookingId: `BK${Date.now()}`,\n  orderId: order.id,\n  orderNumber: order.order_number,\n  customerName: `${order.customer.first_name} ${order.customer.last_name}`,\n  customerEmail: order.customer.email,\n  customerPhone: order.customer.phone || order.shipping_address?.phone,\n  \n  // NEW: WhatsApp number (mandatory)\n  customerWhatsApp: order.note_attributes?.find(attr => attr.name === 'whatsapp_number')?.value || order.customer.phone,\n  \n  tourName: order.line_items[0].name,\n  tourId: order.line_items[0].product_id,\n  tourDate: order.note_attributes?.find(attr => attr.name === 'tour_date')?.value,\n  numberOfPeople: parseInt(order.line_items[0].quantity) || 1,\n  totalAmount: parseFloat(order.total_price),\n  currency: order.currency,\n  \n  // Payment NOT collected - will send payment links later\n  paymentStatus: 'pending_payment_link',\n  paymentMethod: 'To be selected by customer',\n  paymentLinkSent: false,\n  \n  // NEW: Location data with coordinates\n  pickupLocation: order.note_attributes?.find(attr => attr.name === 'pickup_location')?.value || 'To be confirmed',\n  pickupLatitude: order.note_attributes?.find(attr => attr.name === 'pickup_lat')?.value,\n  pickupLongitude: order.note_attributes?.find(attr => attr.name === 'pickup_lng')?.value,\n  pickupMapUrl: order.note_attributes?.find(attr => attr.name === 'pickup_map_url')?.value,\n  \n  specialRequests: order.note,\n  createdAt: new Date().toISOString(),\n  status: 'pending_confirmation',\n  \n  // Alternative location tracking\n  alternativeLocationOffered: false,\n  alternativeLocation: null,\n  alternativeLocationLat: null,\n  alternativeLocationLng: null\n};\n\nreturn [{ json: bookingData }];"
+      },
+      "name": "Parse Booking Data with Location & WhatsApp",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "notes": "Extracts booking info including location coordinates and WhatsApp"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Load provider configuration\nconst bookingData = items[0].json;\n\nconst providers = [\n  {\n    id: 'provider_1',\n    priority: 1,\n    name: $node['Set Providers Config'].json.provider1_name,\n    lineId: $node['Set Providers Config'].json.provider1_line_id,\n    email: $node['Set Providers Config'].json.provider1_email,\n    active: true\n  },\n  {\n    id: 'provider_2',\n    priority: 2,\n    name: $node['Set Providers Config'].json.provider2_name,\n    lineId: $node['Set Providers Config'].json.provider2_line_id,\n    email: $node['Set Providers Config'].json.provider2_email,\n    active: true\n  },\n  {\n    id: 'provider_3',\n    priority: 3,\n    name: $node['Set Providers Config'].json.provider3_name,\n    lineId: $node['Set Providers Config'].json.provider3_line_id,\n    email: $node['Set Providers Config'].json.provider3_email,\n    active: true\n  }\n];\n\nconst activeProviders = providers\n  .filter(p => p.active)\n  .sort((a, b) => a.priority - b.priority);\n\nreturn [{\n  json: {\n    ...bookingData,\n    providers: activeProviders,\n    currentProviderIndex: 0,\n    currentProvider: activeProviders[0]\n  }\n}];"
+      },
+      "name": "Load Provider Priority List",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "notes": "Loads provider list sorted by priority"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{$json.currentProvider.lineId}}",
+        "message": "🎫 NEW BOOKING REQUEST\\n\\nBooking ID: {{$json.bookingId}}\\nTour: {{$json.tourName}}\\nDate: {{$json.tourDate}}\\nCustomer: {{$json.customerName}}\\nGuests: {{$json.numberOfPeople}} people\\n\\n📱 WhatsApp: {{$json.customerWhatsApp}}\\n📞 Phone: {{$json.customerPhone}}\\n\\n📍 Pickup Location:\\n{{$json.pickupLocation}}\\n🗺️ View on Map: {{$json.pickupMapUrl}}\\n\\n💰 Amount: {{$json.currency}} {{$json.totalAmount}}\\n⚠️ Payment: NOT PAID YET - Will be collected after confirmation\\n\\n👇 PLEASE RESPOND:",
+        "additionalFields": {
+          "quickReply": {
+            "items": [
+              {
+                "type": "action",
+                "action": {
+                  "type": "message",
+                  "label": "✅ CONFIRM",
+                  "text": "CONFIRM {{$json.bookingId}}"
+                }
+              },
+              {
+                "type": "action",
+                "action": {
+                  "type": "message",
+                  "label": "❌ CANCEL (Fully Booked)",
+                  "text": "CANCEL {{$json.bookingId}}"
+                }
+              },
+              {
+                "type": "action",
+                "action": {
+                  "type": "message",
+                  "label": "⚠️ ALTERNATIVE LOCATION",
+                  "text": "ALTERNATIVE {{$json.bookingId}}"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "name": "Send LINE Message with Action Buttons",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "lineNotifyOAuth2Api": {
+          "id": "1",
+          "name": "LINE Messaging API"
+        }
+      },
+      "notes": "Sends booking request with CONFIRM/CANCEL/ALTERNATIVE buttons"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$json.customerEmail}}",
+        "subject": "Booking Request Received - {{$json.tourName}}",
+        "emailType": "html",
+        "html": "={{$binary.acknowledgmentEmail.data}}",
+        "options": {}
+      },
+      "name": "Send Acknowledgment Email to Customer",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [850, 450],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Sends immediate acknowledgment - NO PAYMENT LINK YET"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        }
+      },
+      "name": "Log to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [850, 600],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Logs booking with location and WhatsApp data"
+    },
+    {
+      "parameters": {
+        "path": "provider-response",
+        "options": {}
+      },
+      "name": "LINE Provider Response Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [1100, 300],
+      "webhookId": "line-provider-response",
+      "notes": "Receives CONFIRM/CANCEL/ALTERNATIVE responses from provider"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse provider response from LINE message\nconst message = items[0].json.events[0].message.text.toUpperCase();\nconst bookingId = message.match(/BK\\d+/)?.[0];\nconst bookingData = $input.first().json;\n\nlet response = {\n  bookingId: bookingId,\n  providerId: items[0].json.events[0].source.userId,\n  messageText: message,\n  timestamp: new Date().toISOString()\n};\n\nif (message.includes('CONFIRM')) {\n  response.status = 'confirmed';\n  response.action = 'confirm';\n  // Provider will send pickup time in next message\n  response.needsPickupTime = true;\n  \n} else if (message.includes('CANCEL') || message.includes('FULLY BOOKED')) {\n  response.status = 'rejected';\n  response.reason = 'Fully booked';\n  response.action = 'cancel';\n  \n} else if (message.includes('ALTERNATIVE')) {\n  response.status = 'alternative_location_requested';\n  response.action = 'alternative_location';\n  response.needsAlternativeLocation = true;\n  \n} else if (message.includes('PICKUP TIME:')) {\n  // Parse pickup time range\n  const timeMatch = message.match(/PICKUP TIME:\\s*(.+)/i);\n  response.status = 'pickup_time_set';\n  response.pickupTime = timeMatch ? timeMatch[1].trim() : 'TBD';\n  response.action = 'set_pickup_time';\n  \n} else if (message.includes('ALT LOCATION:')) {\n  // Parse alternative location\n  const locationMatch = message.match(/ALT LOCATION:\\s*(.+)/i);\n  response.status = 'alternative_location_set';\n  response.alternativeLocation = locationMatch ? locationMatch[1].trim() : null;\n  response.action = 'set_alternative_location';\n  \n} else {\n  response.status = 'unclear';\n  response.action = 'unclear';\n}\n\nreturn [{ json: { ...bookingData, providerResponse: response } }];"
+      },
+      "name": "Parse Provider Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1300, 300],
+      "notes": "Parses CONFIRM/CANCEL/ALTERNATIVE/PICKUP TIME/ALT LOCATION"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.providerResponse.action}}",
+              "value2": "confirm"
+            }
+          ]
+        }
+      },
+      "name": "Check Response Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [1500, 300],
+      "notes": "Routes based on: confirm / cancel / alternative_location"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{$json.currentProvider.lineId}}",
+        "message": "✅ Great! Please provide pickup time range.\\n\\nExample:\\nPICKUP TIME: 9:00 AM - 9:20 AM\\n\\nOr\\nPICKUP TIME: 14:00 - 14:30",
+        "additionalFields": {}
+      },
+      "name": "Request Pickup Time from Provider",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [1700, 200],
+      "credentials": {
+        "lineNotifyOAuth2Api": {
+          "id": "1",
+          "name": "LINE Messaging API"
+        }
+      },
+      "notes": "Asks provider for pickup time range"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Generate payment links for all payment methods\nconst booking = items[0].json;\nconst amount = booking.totalAmount;\nconst currency = booking.currency;\nconst bookingId = booking.bookingId;\n\n// Payment link generators\nconst paymentLinks = {\n  // Cash on Tour - no link needed\n  cashOnTour: {\n    method: 'Cash on Tour (COT)',\n    description: 'Pay cash to the driver at tour start',\n    link: null,\n    instructions: 'Please have exact change ready. Our driver will provide a receipt.'\n  },\n  \n  // Thai Bank Transfer\n  thaiBank: {\n    method: 'Thai Bank Transfer',\n    description: 'Transfer to our Thai bank account',\n    link: null,\n    instructions: `Bank: ${process.env.THAI_BANK_NAME || 'Bangkok Bank'}\\nAccount Name: ${process.env.THAI_BANK_ACCOUNT_NAME}\\nAccount Number: ${process.env.THAI_BANK_ACCOUNT_NUMBER}\\nAmount: ${currency} ${amount}\\nReference: ${bookingId}`\n  },\n  \n  // QR Code Payment (PromptPay)\n  qrCode: {\n    method: 'QR Code (PromptPay)',\n    description: 'Scan QR code to pay via Thai banking app',\n    link: `https://promptpay.io/${process.env.PROMPTPAY_ID}/${amount}`,\n    qrCodeUrl: `https://promptpay.io/${process.env.PROMPTPAY_ID}/${amount}.png`,\n    instructions: 'Scan the QR code with your Thai banking app to complete payment'\n  },\n  \n  // PayPal\n  paypal: {\n    method: 'PayPal',\n    description: 'Pay securely with PayPal',\n    link: `https://www.paypal.com/paypalme/${process.env.PAYPAL_USERNAME}/${amount}${currency}`,\n    instructions: 'Click the link to pay with your PayPal account or credit card'\n  },\n  \n  // Stripe Payment Link\n  stripe: {\n    method: 'Credit/Debit Card (Stripe)',\n    description: 'Pay with credit or debit card',\n    link: `${process.env.STRIPE_PAYMENT_LINK_BASE}?client_reference_id=${bookingId}&amount=${amount * 100}`,\n    instructions: 'Secure payment via Stripe. All major cards accepted.'\n  },\n  \n  // Wise (TransferWise)\n  wise: {\n    method: 'Wise (TransferWise)',\n    description: 'International transfer with low fees',\n    link: null,\n    instructions: `Transfer to our Wise account:\\nEmail: ${process.env.WISE_EMAIL}\\nAmount: ${currency} ${amount}\\nReference: ${bookingId}`\n  },\n  \n  // Revolut\n  revolut: {\n    method: 'Revolut',\n    description: 'Pay via Revolut',\n    link: `https://revolut.me/${process.env.REVOLUT_USERNAME}/${amount}`,\n    instructions: 'Click to pay via Revolut. Add reference: ' + bookingId\n  }\n};\n\nreturn [{\n  json: {\n    ...booking,\n    paymentLinks: paymentLinks,\n    paymentLinkGenerated: true,\n    paymentLinkGeneratedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "Generate Payment Links (All Methods)",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1900, 200],
+      "notes": "Creates payment links for COT, Thai Bank, QR, PayPal, Stripe, Wise, Revolut"
+    },
+    {
+      "parameters": {
+        "mode": "loadTemplate",
+        "templateFile": "/data/templates/confirmation-email-with-payment.html",
+        "dataPropertyName": "json"
+      },
+      "name": "Load Confirmation Template with Payment Links",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1,
+      "position": [2100, 200],
+      "notes": "Loads confirmation email template with all payment options"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$json.customerEmail}}",
+        "subject": "✅ Booking Confirmed - Payment Required - {{$json.tourName}}",
+        "emailType": "html",
+        "html": "={{$binary.confirmationEmail.data}}",
+        "options": {}
+      },
+      "name": "Send Confirmation with Payment Links",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2300, 200],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Sends confirmation email with all payment options"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{$json.customerWhatsApp}}",
+        "from": "={{$env.TWILIO_WHATSAPP_NUMBER}}",
+        "message": "✅ Booking Confirmed!\\n\\nTour: {{$json.tourName}}\\nDate: {{$json.tourDate}}\\nPickup: {{$json.pickupTime}}\\n\\nPlease check your email for payment options.\\n\\nDriver will contact you on this WhatsApp number 30 min before pickup.\\n\\n{{$env.BUSINESS_NAME}}",
+        "additionalFields": {}
+      },
+      "name": "Send WhatsApp Confirmation",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [2300, 350],
+      "credentials": {
+        "twilioApi": {
+          "id": "6",
+          "name": "Twilio API"
+        }
+      },
+      "notes": "Sends confirmation to customer's WhatsApp"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{$json.currentProvider.lineId}}",
+        "message": "⚠️ ALTERNATIVE LOCATION REQUEST\\n\\nBooking: {{$json.bookingId}}\\nCustomer Location: {{$json.pickupLocation}}\\n🗺️ {{$json.pickupMapUrl}}\\n\\nPlease provide alternative pickup location that is accessible.\\n\\nSend location details like this:\\nALT LOCATION: [Name], [Address]\\nALT MAP: [Google Maps Link]\\n\\nOr share your location pin directly in LINE.",
+        "additionalFields": {}
+      },
+      "name": "Request Alternative Location from Provider",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [1700, 400],
+      "credentials": {
+        "lineNotifyOAuth2Api": {
+          "id": "1",
+          "name": "LINE Messaging API"
+        }
+      },
+      "notes": "Asks provider to suggest alternative pickup location"
+    },
+    {
+      "parameters": {
+        "mode": "loadTemplate",
+        "templateFile": "/data/templates/alternative-location-email.html",
+        "dataPropertyName": "json"
+      },
+      "name": "Load Alternative Location Email Template",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1,
+      "position": [1900, 400],
+      "notes": "Email template for route change notification"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$json.customerEmail}}",
+        "subject": "⚠️ Pickup Location Update - {{$json.tourName}}",
+        "emailType": "html",
+        "html": "={{$binary.alternativeLocationEmail.data}}",
+        "options": {}
+      },
+      "name": "Send Alternative Location Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [2100, 400],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Notifies customer about pickup location change"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "options": {}
+      },
+      "name": "Update Booking with Alternative Location",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [2100, 550],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Updates booking with alternative location data"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Check if there are more providers to try\nconst data = items[0].json;\nconst currentIndex = data.currentProviderIndex;\nconst providers = data.providers;\n\nif (currentIndex + 1 < providers.length) {\n  return [{\n    json: {\n      ...data,\n      currentProviderIndex: currentIndex + 1,\n      currentProvider: providers[currentIndex + 1],\n      tryNextProvider: true\n    }\n  }];\n} else {\n  return [{\n    json: {\n      ...data,\n      tryNextProvider: false,\n      allProvidersBooked: true\n    }\n  }];\n}"
+      },
+      "name": "Check Next Provider",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1700, 600],
+      "notes": "Checks if there's another provider to try"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "options": {}
+      },
+      "name": "Update Booking Status - Confirmed",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [2300, 500],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Updates booking with payment link sent status"
+    }
+  ],
+  "connections": {
+    "Shopify Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse Booking Data with Location & WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Booking Data with Location & WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Load Provider Priority List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Provider Priority List": {
+      "main": [
+        [
+          {
+            "node": "Send LINE Message with Action Buttons",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Acknowledgment Email to Customer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LINE Provider Response Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Provider Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Provider Response": {
+      "main": [
+        [
+          {
+            "node": "Check Response Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Response Type": {
+      "main": [
+        [
+          {
+            "node": "Request Pickup Time from Provider",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Next Provider",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Request Alternative Location from Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Pickup Time from Provider": {
+      "main": [
+        [
+          {
+            "node": "Generate Payment Links (All Methods)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Payment Links (All Methods)": {
+      "main": [
+        [
+          {
+            "node": "Load Confirmation Template with Payment Links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Confirmation Template with Payment Links": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation with Payment Links",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send WhatsApp Confirmation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Booking Status - Confirmed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Alternative Location from Provider": {
+      "main": [
+        [
+          {
+            "node": "Load Alternative Location Email Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Alternative Location Email Template": {
+      "main": [
+        [
+          {
+            "node": "Send Alternative Location Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Booking with Alternative Location",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Next Provider": {
+      "main": [
+        [
+          {
+            "node": "Send LINE Message with Action Buttons",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 3600,
+    "timezone": "Asia/Bangkok"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "2.0"
+}

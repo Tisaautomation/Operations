@@ -1,0 +1,42 @@
+{
+  "providers": [
+    {
+      "id": "provider_1",
+      "name": "Provider 1 Name",
+      "priority": 1,
+      "lineId": "LINE_USER_ID_PROVIDER_1",
+      "phone": "+1234567890",
+      "email": "provider1@example.com",
+      "commission_rate": 0.15,
+      "payment_terms": "weekly",
+      "active": true
+    },
+    {
+      "id": "provider_2",
+      "name": "Provider 2 Name",
+      "priority": 2,
+      "lineId": "LINE_USER_ID_PROVIDER_2",
+      "phone": "+1234567891",
+      "email": "provider2@example.com",
+      "commission_rate": 0.18,
+      "payment_terms": "weekly",
+      "active": true
+    },
+    {
+      "id": "provider_3",
+      "name": "Provider 3 Name",
+      "priority": 3,
+      "lineId": "LINE_USER_ID_PROVIDER_3",
+      "phone": "+1234567892",
+      "email": "provider3@example.com",
+      "commission_rate": 0.20,
+      "payment_terms": "weekly",
+      "active": true
+    }
+  ],
+  "settings": {
+    "response_timeout_minutes": 30,
+    "max_retry_attempts": 3,
+    "default_commission_rate": 0.15
+  }
+}

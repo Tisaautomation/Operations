@@ -1,0 +1,292 @@
+{
+  "name": "Daily Evening Financial Reports",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 20 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger - 8:00 PM Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notes": "Triggers every day at 8:00 PM to send financial reports"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "options": {}
+      },
+      "name": "Fetch Today's Completed Tours",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [450, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Retrieves all completed tours for today"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Calculate financial data by provider\nconst today = new Date();\ntoday.setHours(0, 0, 0, 0);\n\nconst allBookings = items.map(item => item.json);\n\n// Filter for today's completed bookings\nconst todayCompleted = allBookings.filter(booking => {\n  const bookingDate = new Date(booking.tourDate);\n  bookingDate.setHours(0, 0, 0, 0);\n  return bookingDate.getTime() === today.getTime() && \n         booking.status === 'completed';\n});\n\n// Group by provider and calculate finances\nconst providerFinances = {};\n\ntodayCompleted.forEach(booking => {\n  const providerId = booking.providerId || booking.providerName;\n  const amount = parseFloat(booking.totalAmount) || 0;\n  const commissionRate = parseFloat(booking.commissionRate) || 0.15; // 15% default\n  \n  if (!providerFinances[providerId]) {\n    providerFinances[providerId] = {\n      providerId: providerId,\n      providerName: booking.providerName,\n      providerEmail: booking.providerEmail,\n      providerLineId: booking.providerLineId,\n      commissionRate: commissionRate * 100,\n      paymentTerms: booking.paymentTerms || 'weekly',\n      currency: booking.currency || 'USD',\n      completedTours: 0,\n      totalCustomers: 0,\n      totalRevenue: 0,\n      commissionAmount: 0,\n      providerShare: 0,\n      paymentBreakdown: {},\n      tourDetails: []\n    };\n  }\n  \n  const provider = providerFinances[providerId];\n  const commission = amount * commissionRate;\n  \n  provider.completedTours++;\n  provider.totalCustomers += parseInt(booking.numberOfPeople) || 1;\n  provider.totalRevenue += amount;\n  provider.commissionAmount += commission;\n  provider.providerShare += (amount - commission);\n  \n  // Payment method breakdown\n  const paymentMethod = booking.paymentMethod || 'Unknown';\n  if (!provider.paymentBreakdown[paymentMethod]) {\n    provider.paymentBreakdown[paymentMethod] = {\n      method: paymentMethod,\n      count: 0,\n      amount: 0\n    };\n  }\n  provider.paymentBreakdown[paymentMethod].count++;\n  provider.paymentBreakdown[paymentMethod].amount += amount;\n  \n  // Tour details\n  provider.tourDetails.push({\n    tourName: booking.tourName,\n    pickupTime: booking.pickupTime,\n    customerName: booking.customerName,\n    numberOfPeople: booking.numberOfPeople,\n    amount: amount.toFixed(2),\n    paymentMethod: paymentMethod\n  });\n});\n\n// Format results\nconst results = Object.values(providerFinances).map(provider => {\n  // Determine settlement\n  const settlementAmount = Math.abs(provider.commissionAmount);\n  const owedToProvider = provider.providerShare > provider.commissionAmount;\n  \n  return {\n    ...provider,\n    totalRevenue: provider.totalRevenue.toFixed(2),\n    commissionAmount: provider.commissionAmount.toFixed(2),\n    providerShare: provider.providerShare.toFixed(2),\n    averageRevenue: (provider.totalRevenue / provider.completedTours).toFixed(2),\n    paymentBreakdown: Object.values(provider.paymentBreakdown).map(pb => ({\n      ...pb,\n      amount: pb.amount.toFixed(2)\n    })),\n    settlementAmount: settlementAmount.toFixed(2),\n    owedToProvider: owedToProvider,\n    date: today.toLocaleDateString('en-US', { \n      weekday: 'long', \n      year: 'numeric', \n      month: 'long', \n      day: 'numeric' \n    }),\n    reportGeneratedTime: new Date().toLocaleString(),\n    // Week-to-date placeholder (would calculate from historical data)\n    weekRevenue: provider.totalRevenue,\n    weekTours: provider.completedTours,\n    averageDailyRevenue: (provider.totalRevenue / 1).toFixed(2)\n  };\n});\n\nreturn results.map(r => ({ json: r }));"
+      },
+      "name": "Calculate Provider Finances",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "notes": "Calculates revenue, commissions, and payment settlements for each provider"
+    },
+    {
+      "parameters": {
+        "mode": "loadTemplate",
+        "templateFile": "/data/templates/provider-evening-report.html",
+        "dataPropertyName": "json"
+      },
+      "name": "Load Evening Financial Report Template",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "notes": "Loads financial report template"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$json.providerEmail}}",
+        "subject": "Daily Financial Report - {{$json.date}}",
+        "emailType": "html",
+        "html": "={{$binary.eveningReport.data}}",
+        "options": {
+          "ccEmail": "={{$env.BUSINESS_EMAIL}}",
+          "attachments": []
+        }
+      },
+      "name": "Send Financial Report to Provider",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 300],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Emails financial report to each provider"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{$json.providerLineId}}",
+        "message": "💰 Daily Financial Report\\n\\n📅 Date: {{$json.date}}\\n💵 Total Revenue: {{$json.currency}}{{$json.totalRevenue}}\\n🎫 Completed Tours: {{$json.completedTours}}\\n👥 Customers Served: {{$json.totalCustomers}}\\n\\n{{#if owedToProvider}}✅ We owe you: {{$json.currency}}{{$json.settlementAmount}}{{else}}📋 You owe us: {{$json.currency}}{{$json.settlementAmount}}{{/if}}\\n\\nDetailed report sent to your email.",
+        "additionalFields": {}
+      },
+      "name": "Send LINE Financial Summary",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [1050, 450],
+      "credentials": {
+        "lineNotifyOAuth2Api": {
+          "id": "1",
+          "name": "LINE Messaging API"
+        }
+      },
+      "notes": "Sends quick financial summary via LINE"
+    },
+    {
+      "parameters": {
+        "resource": "invoice",
+        "operation": "create",
+        "customerRef": "={{$json.providerId}}",
+        "line": [
+          {
+            "description": "Tour Services - {{$json.date}}",
+            "amount": "={{$json.totalRevenue}}",
+            "detailType": "SalesItemLineDetail"
+          },
+          {
+            "description": "Commission ({{$json.commissionRate}}%)",
+            "amount": "=-{{$json.commissionAmount}}",
+            "detailType": "SalesItemLineDetail"
+          }
+        ],
+        "additionalFields": {
+          "dueDate": "={{$json.paymentDueDate}}",
+          "customFields": {
+            "Provider": "={{$json.providerName}}",
+            "Tours_Count": "={{$json.completedTours}}",
+            "Report_Date": "={{$json.date}}"
+          }
+        }
+      },
+      "name": "Create QuickBooks Invoice",
+      "type": "n8n-nodes-base.quickbooks",
+      "typeVersion": 1,
+      "position": [1050, 600],
+      "credentials": {
+        "quickBooksOAuth2Api": {
+          "id": "5",
+          "name": "QuickBooks OAuth2"
+        }
+      },
+      "notes": "Creates invoice in QuickBooks for financial tracking"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "FinancialReports!A:Z",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        }
+      },
+      "name": "Log Financial Report to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [1050, 750],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Logs financial data to Google Sheets for analysis"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Create comprehensive admin financial summary\nconst allProviders = items.map(item => item.json);\n\nconst totalRevenue = allProviders.reduce((sum, p) => parseFloat(p.totalRevenue) + sum, 0);\nconst totalCommissions = allProviders.reduce((sum, p) => parseFloat(p.commissionAmount) + sum, 0);\nconst totalTours = allProviders.reduce((sum, p) => p.completedTours + sum, 0);\nconst totalCustomers = allProviders.reduce((sum, p) => p.totalCustomers + sum, 0);\n\nconst summary = {\n  date: allProviders[0]?.date || new Date().toLocaleDateString(),\n  currency: allProviders[0]?.currency || 'USD',\n  totalRevenue: totalRevenue.toFixed(2),\n  totalCommissions: totalCommissions.toFixed(2),\n  netRevenue: (totalRevenue - totalCommissions).toFixed(2),\n  totalTours: totalTours,\n  totalCustomers: totalCustomers,\n  averageRevenuePerTour: (totalRevenue / totalTours).toFixed(2),\n  totalProviders: allProviders.length,\n  providerBreakdown: allProviders.map(p => ({\n    name: p.providerName,\n    revenue: p.totalRevenue,\n    commission: p.commissionAmount,\n    tours: p.completedTours,\n    customers: p.totalCustomers,\n    settlement: p.settlementAmount,\n    owedToProvider: p.owedToProvider\n  })),\n  reportGeneratedTime: new Date().toLocaleString()\n};\n\nreturn [{ json: summary }];"
+      },
+      "name": "Create Admin Financial Summary",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 600],
+      "notes": "Creates comprehensive financial summary for business owner"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$env.BUSINESS_EMAIL}}",
+        "subject": "💰 Daily Financial Summary - {{$json.date}} - {{$json.currency}}{{$json.totalRevenue}}",
+        "emailType": "html",
+        "html": "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'><h2 style='color: #2e7d32;'>💰 Daily Financial Summary</h2><p><strong>Date:</strong> {{$json.date}}</p><div style='background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0;'><table style='width: 100%;'><tr><td><strong>Gross Revenue:</strong></td><td style='text-align: right; font-size: 20px; color: #2e7d32;'><strong>{{$json.currency}}{{$json.totalRevenue}}</strong></td></tr><tr><td><strong>Total Commissions:</strong></td><td style='text-align: right; font-size: 18px; color: #f57c00;'><strong>{{$json.currency}}{{$json.totalCommissions}}</strong></td></tr><tr><td><strong>Net Revenue:</strong></td><td style='text-align: right; font-size: 20px; color: #1976d2;'><strong>{{$json.currency}}{{$json.netRevenue}}</strong></td></tr></table></div><div style='background: #f8f9fa; padding: 15px; border-radius: 8px;'><h3>📊 Daily Metrics</h3><ul><li><strong>Total Tours:</strong> {{$json.totalTours}}</li><li><strong>Total Customers:</strong> {{$json.totalCustomers}}</li><li><strong>Active Providers:</strong> {{$json.totalProviders}}</li><li><strong>Avg Revenue/Tour:</strong> {{$json.currency}}{{$json.averageRevenuePerTour}}</li></ul></div><h3>Provider Breakdown</h3><table style='width: 100%; border-collapse: collapse;'><thead><tr style='background: #2196F3; color: white;'><th style='padding: 10px; text-align: left;'>Provider</th><th style='padding: 10px; text-align: center;'>Tours</th><th style='padding: 10px; text-align: right;'>Revenue</th><th style='padding: 10px; text-align: right;'>Commission</th></tr></thead><tbody>{{#each providerBreakdown}}<tr style='border-bottom: 1px solid #e0e0e0;'><td style='padding: 10px;'>{{this.name}}</td><td style='padding: 10px; text-align: center;'>{{this.tours}}</td><td style='padding: 10px; text-align: right;'>{{../currency}}{{this.revenue}}</td><td style='padding: 10px; text-align: right;'>{{../currency}}{{this.commission}}</td></tr>{{/each}}</tbody></table><p style='margin-top: 30px; font-size: 12px; color: #666;'>Report generated: {{$json.reportGeneratedTime}}</p></div>",
+        "options": {}
+      },
+      "name": "Send Admin Financial Summary",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 600],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Sends comprehensive financial summary to business owner"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - 8:00 PM Daily": {
+      "main": [
+        [
+          {
+            "node": "Fetch Today's Completed Tours",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Today's Completed Tours": {
+      "main": [
+        [
+          {
+            "node": "Calculate Provider Finances",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Provider Finances": {
+      "main": [
+        [
+          {
+            "node": "Load Evening Financial Report Template",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Admin Financial Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Evening Financial Report Template": {
+      "main": [
+        [
+          {
+            "node": "Send Financial Report to Provider",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send LINE Financial Summary",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create QuickBooks Invoice",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Financial Report to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Admin Financial Summary": {
+      "main": [
+        [
+          {
+            "node": "Send Admin Financial Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 3600,
+    "timezone": "America/New_York"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

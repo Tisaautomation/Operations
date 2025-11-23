@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tour Voucher</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 700px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #134e5e 0%, #71b280 100%); padding: 40px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 32px;">🎫 TOUR VOUCHER</h1>
+        <p style="color: #f0f0f0; margin: 10px 0 0 0; font-size: 18px;">Your Adventure Starts Tomorrow!</p>
+    </div>
+
+    <div style="background: #ffffff; padding: 40px; border: 3px solid #134e5e; border-top: none; border-radius: 0 0 10px 10px;">
+
+        <div style="text-align: center; background: #ffd700; padding: 15px; border-radius: 8px; margin-bottom: 30px;">
+            <h2 style="margin: 0; color: #134e5e;">BOOKING CONFIRMATION</h2>
+            <p style="margin: 10px 0 0 0; font-size: 24px; font-weight: bold; color: #134e5e;">{{bookingId}}</p>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 25px; border-radius: 8px; margin: 20px 0; border: 2px dashed #134e5e;">
+            <h3 style="color: #134e5e; margin-top: 0; text-align: center;">👤 GUEST INFORMATION</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 10px; font-weight: bold; width: 40%;">Guest Name:</td>
+                    <td style="padding: 10px; font-size: 16px;">{{customerName}}</td>
+                </tr>
+                <tr style="background: #ffffff;">
+                    <td style="padding: 10px; font-weight: bold;">Email:</td>
+                    <td style="padding: 10px;">{{customerEmail}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; font-weight: bold;">Phone:</td>
+                    <td style="padding: 10px;">{{customerPhone}}</td>
+                </tr>
+                <tr style="background: #ffffff;">
+                    <td style="padding: 10px; font-weight: bold;">Number of Guests:</td>
+                    <td style="padding: 10px; font-size: 16px; font-weight: bold; color: #134e5e;">{{numberOfPeople}} people</td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="background: #e8f5e9; padding: 25px; border-radius: 8px; margin: 20px 0; border: 2px solid #71b280;">
+            <h3 style="color: #134e5e; margin-top: 0; text-align: center;">🗺️ TOUR DETAILS</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 10px; font-weight: bold; width: 40%;">Tour Name:</td>
+                    <td style="padding: 10px; font-size: 18px; font-weight: bold; color: #134e5e;">{{tourName}}</td>
+                </tr>
+                <tr style="background: #ffffff;">
+                    <td style="padding: 10px; font-weight: bold;">Tour Date:</td>
+                    <td style="padding: 10px; font-size: 18px; font-weight: bold; color: #d32f2f;">{{tourDate}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; font-weight: bold;">Pickup Time:</td>
+                    <td style="padding: 10px; font-size: 20px; font-weight: bold; color: #d32f2f;">{{pickupTime}}</td>
+                </tr>
+                <tr style="background: #ffffff;">
+                    <td style="padding: 10px; font-weight: bold;">Pickup Location:</td>
+                    <td style="padding: 10px; font-size: 16px;">{{pickupLocation}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px; font-weight: bold;">Duration:</td>
+                    <td style="padding: 10px;">{{tourDuration}}</td>
+                </tr>
+                <tr style="background: #ffffff;">
+                    <td style="padding: 10px; font-weight: bold;">Tour Provider:</td>
+                    <td style="padding: 10px;">{{providerName}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="background: #fff9e6; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 5px solid #ffc107;">
+            <h3 style="color: #134e5e; margin-top: 0;">📍 Meeting Point</h3>
+            <p style="font-size: 16px; margin: 10px 0;"><strong>{{pickupLocation}}</strong></p>
+            {{#if pickupMapUrl}}
+            <a href="{{pickupMapUrl}}" style="display: inline-block; background: #4caf50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 10px;">📱 Open in Google Maps</a>
+            {{/if}}
+            <p style="margin-top: 15px; color: #d32f2f;"><strong>⚠️ Please arrive 5-10 minutes before pickup time</strong></p>
+        </div>
+
+        <div style="background: #e3f2fd; padding: 25px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #134e5e; margin-top: 0; text-align: center;">💳 PAYMENT INFORMATION</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 10px; font-weight: bold; width: 40%;">Total Amount:</td>
+                    <td style="padding: 10px; font-size: 22px; font-weight: bold; color: #134e5e;">{{currency}}{{totalAmount}}</td>
+                </tr>
+                <tr style="background: #ffffff;">
+                    <td style="padding: 10px; font-weight: bold;">Payment Status:</td>
+                    <td style="padding: 10px; font-size: 16px; font-weight: bold; color: {{#if isPaid}}#4caf50{{else}}#ff9800{{/if}};">
+                        {{#if isPaid}}✅ PAID{{else}}⏳ PAYMENT PENDING{{/if}}
+                    </td>
+                </tr>
+                {{#unless isPaid}}
+                <tr>
+                    <td style="padding: 10px; font-weight: bold;">Payment Method:</td>
+                    <td style="padding: 10px;">{{paymentMethod}}</td>
+                </tr>
+                {{/unless}}
+            </table>
+        </div>
+
+        <div style="background: #ffebee; border: 2px solid #f44336; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #d32f2f; margin-top: 0; text-align: center;">⚠️ IMPORTANT REMINDERS</h3>
+            <ul style="line-height: 2; margin: 10px 0;">
+                <li><strong>Bring this voucher</strong> (printed or on your phone)</li>
+                <li><strong>Valid ID/Passport</strong> required</li>
+                <li><strong>We'll call you 30 minutes before</strong> pickup time</li>
+                <li><strong>Cancellation policy:</strong> 24 hours notice required</li>
+                <li><strong>Weather:</strong> Tours run rain or shine (unless unsafe)</li>
+                <li><strong>What to bring:</strong> Comfortable shoes, sunscreen, camera, water</li>
+            </ul>
+        </div>
+
+        <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+            <h3 style="color: #134e5e; margin-top: 0;">📞 EMERGENCY CONTACT</h3>
+            <p style="font-size: 18px; margin: 10px 0;"><strong>{{businessPhone}}</strong></p>
+            <p style="margin: 5px 0;">Available 24/7 for tour-related emergencies</p>
+        </div>
+
+        <div style="border-top: 3px dashed #134e5e; margin: 30px 0; padding-top: 30px; text-align: center;">
+            <div style="background: #134e5e; color: white; padding: 20px; border-radius: 8px;">
+                <h2 style="margin: 0;">🌟 We're Excited to Show You an Amazing Time! 🌟</h2>
+                <p style="margin: 15px 0 0 0;">See you tomorrow!</p>
+            </div>
+        </div>
+
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+
+        <div style="text-align: center; color: #666; font-size: 14px;">
+            <p><strong>{{businessName}}</strong></p>
+            <p>📞 {{businessPhone}} | 📧 {{businessEmail}}</p>
+            <p>🌐 <a href="{{websiteUrl}}" style="color: #134e5e; text-decoration: none;">{{websiteUrl}}</a></p>
+            <p style="margin-top: 20px; font-size: 12px; color: #999;">
+                Voucher issued: {{issueDate}} | Booking ID: {{bookingId}}<br>
+                This is your official tour confirmation. Please keep for your records.
+            </p>
+        </div>
+    </div>
+
+    <div style="margin-top: 20px; padding: 15px; background: #fffacd; border: 1px solid #ffd700; border-radius: 5px; text-align: center;">
+        <p style="margin: 0; font-size: 14px;">💡 <strong>Tip:</strong> Save this email or take a screenshot for easy access during your tour!</p>
+    </div>
+</body>
+</html>
