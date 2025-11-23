@@ -1,0 +1,353 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "TourInKohSamui Optimized",
+    "theme_version": "2.0.0",
+    "theme_author": "TourInKohSamui",
+    "theme_documentation_url": "",
+    "theme_support_url": ""
+  },
+  {
+    "name": "Typography",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Heading Font"
+      },
+      {
+        "type": "font_picker",
+        "id": "type_header_font",
+        "default": "poppins_n7",
+        "label": "Font",
+        "info": "Poppins Bold (matching logo branding)"
+      },
+      {
+        "type": "range",
+        "id": "heading_scale_h1",
+        "min": 36,
+        "max": 80,
+        "step": 2,
+        "unit": "px",
+        "label": "H1 Size",
+        "default": 62
+      },
+      {
+        "type": "range",
+        "id": "heading_scale_h2",
+        "min": 28,
+        "max": 64,
+        "step": 2,
+        "unit": "px",
+        "label": "H2 Size",
+        "default": 48
+      },
+      {
+        "type": "range",
+        "id": "heading_scale_h3",
+        "min": 24,
+        "max": 48,
+        "step": 2,
+        "unit": "px",
+        "label": "H3 Size",
+        "default": 36
+      },
+      {
+        "type": "header",
+        "content": "Subheading Font"
+      },
+      {
+        "type": "font_picker",
+        "id": "type_subheading_font",
+        "default": "inter_n5",
+        "label": "Font",
+        "info": "Inter Medium"
+      },
+      {
+        "type": "header",
+        "content": "Body Font"
+      },
+      {
+        "type": "font_picker",
+        "id": "type_body_font",
+        "default": "inter_n4",
+        "label": "Font",
+        "info": "Inter Regular"
+      },
+      {
+        "type": "range",
+        "id": "type_body_base_size",
+        "min": 14,
+        "max": 20,
+        "step": 1,
+        "unit": "px",
+        "label": "Base Size",
+        "default": 16
+      }
+    ]
+  },
+  {
+    "name": "Colors",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Turquoise Scheme (Primary)"
+      },
+      {
+        "type": "color",
+        "id": "colors_turquoise_background",
+        "label": "Background",
+        "default": "#FFFFFF"
+      },
+      {
+        "type": "color",
+        "id": "colors_turquoise_heading",
+        "label": "Heading",
+        "default": "#00CED1"
+      },
+      {
+        "type": "color",
+        "id": "colors_turquoise_text",
+        "label": "Text",
+        "default": "#2F2F2F"
+      },
+      {
+        "type": "color",
+        "id": "colors_turquoise_primary",
+        "label": "Primary",
+        "default": "#00CED1"
+      },
+      {
+        "type": "color",
+        "id": "colors_turquoise_border",
+        "label": "Border",
+        "default": "#E8E8E8"
+      },
+      {
+        "type": "header",
+        "content": "Purple Scheme (Secondary)"
+      },
+      {
+        "type": "color",
+        "id": "colors_purple_background",
+        "label": "Background",
+        "default": "#2F2F2F"
+      },
+      {
+        "type": "color",
+        "id": "colors_purple_heading",
+        "label": "Heading",
+        "default": "#FFFFFF"
+      },
+      {
+        "type": "color",
+        "id": "colors_purple_primary",
+        "label": "Primary",
+        "default": "#9370DB"
+      },
+      {
+        "type": "header",
+        "content": "Grey Scheme (Alternate)"
+      },
+      {
+        "type": "color",
+        "id": "colors_grey_background",
+        "label": "Background",
+        "default": "#F8F8F8"
+      },
+      {
+        "type": "color",
+        "id": "colors_grey_primary",
+        "label": "Primary",
+        "default": "#666666"
+      }
+    ]
+  },
+  {
+    "name": "Layout",
+    "settings": [
+      {
+        "type": "select",
+        "id": "page_width",
+        "options": [
+          {"value": "narrow", "label": "Narrow"},
+          {"value": "standard", "label": "Standard"},
+          {"value": "wide", "label": "Wide"}
+        ],
+        "default": "wide",
+        "label": "Page Width"
+      },
+      {
+        "type": "range",
+        "id": "logo_height",
+        "min": 20,
+        "max": 100,
+        "step": 2,
+        "unit": "px",
+        "label": "Logo Height (Desktop)",
+        "default": 42
+      },
+      {
+        "type": "range",
+        "id": "logo_height_mobile",
+        "min": 20,
+        "max": 80,
+        "step": 2,
+        "unit": "px",
+        "label": "Logo Height (Mobile)",
+        "default": 32
+      }
+    ]
+  },
+  {
+    "name": "Design Elements",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Corner Radius"
+      },
+      {
+        "type": "range",
+        "id": "button_border_radius_primary",
+        "min": 0,
+        "max": 40,
+        "step": 2,
+        "unit": "px",
+        "label": "Primary Buttons",
+        "default": 20
+      },
+      {
+        "type": "range",
+        "id": "product_corner_radius",
+        "min": 0,
+        "max": 32,
+        "step": 2,
+        "unit": "px",
+        "label": "Products",
+        "default": 16
+      },
+      {
+        "type": "range",
+        "id": "card_corner_radius",
+        "min": 0,
+        "max": 32,
+        "step": 2,
+        "unit": "px",
+        "label": "Cards",
+        "default": 16
+      },
+      {
+        "type": "range",
+        "id": "input_border_radius",
+        "min": 0,
+        "max": 24,
+        "step": 2,
+        "unit": "px",
+        "label": "Input Fields",
+        "default": 12
+      },
+      {
+        "type": "range",
+        "id": "badge_corner_radius",
+        "min": 0,
+        "max": 24,
+        "step": 2,
+        "unit": "px",
+        "label": "Badges",
+        "default": 12
+      },
+      {
+        "type": "header",
+        "content": "Card Effects"
+      },
+      {
+        "type": "select",
+        "id": "card_hover_effect",
+        "options": [
+          {"value": "none", "label": "None"},
+          {"value": "lift", "label": "Lift"},
+          {"value": "shadow", "label": "Shadow"}
+        ],
+        "default": "lift",
+        "label": "Hover Effect"
+      },
+      {
+        "type": "select",
+        "id": "badge_position",
+        "options": [
+          {"value": "top-left", "label": "Top Left"},
+          {"value": "top-right", "label": "Top Right"},
+          {"value": "bottom-left", "label": "Bottom Left"},
+          {"value": "bottom-right", "label": "Bottom Right"}
+        ],
+        "default": "top-right",
+        "label": "Badge Position"
+      }
+    ]
+  },
+  {
+    "name": "Social Media",
+    "settings": [
+      {
+        "type": "text",
+        "id": "social_facebook_link",
+        "label": "Facebook",
+        "info": "https://facebook.com/tourinkohsamui"
+      },
+      {
+        "type": "text",
+        "id": "social_instagram_link",
+        "label": "Instagram",
+        "info": "https://instagram.com/tourinkohsamui"
+      },
+      {
+        "type": "text",
+        "id": "social_youtube_link",
+        "label": "YouTube",
+        "info": "https://youtube.com/@tourinkohsamui"
+      }
+    ]
+  },
+  {
+    "name": "Maps & APIs",
+    "settings": [
+      {
+        "type": "text",
+        "id": "google_maps_api_key",
+        "label": "Google Maps API Key",
+        "info": "Required for location picker in booking form"
+      },
+      {
+        "type": "text",
+        "id": "mapbox_access_token",
+        "label": "Mapbox Access Token",
+        "info": "Required for tour location maps"
+      }
+    ]
+  },
+  {
+    "name": "Performance",
+    "settings": [
+      {
+        "type": "checkbox",
+        "id": "lazy_load_images",
+        "label": "Lazy Load Images",
+        "default": true,
+        "info": "Improve page load speed by deferring off-screen images"
+      },
+      {
+        "type": "checkbox",
+        "id": "defer_javascript",
+        "label": "Defer JavaScript Loading",
+        "default": true,
+        "info": "Load JS files after page content"
+      },
+      {
+        "type": "checkbox",
+        "id": "preconnect_google_fonts",
+        "label": "Preconnect to Google Fonts",
+        "default": true,
+        "info": "Speed up font loading"
+      }
+    ]
+  }
+]

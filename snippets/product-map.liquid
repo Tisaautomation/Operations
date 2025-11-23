@@ -1,0 +1,47 @@
+{% comment %}
+  Product Tour Location Map (Mapbox)
+  Shows tour starting location or route
+  Lazy loaded for performance
+{% endcomment %}
+
+{% if product.metafields.custom.map_latitude and product.metafields.custom.map_longitude %}
+  <div class="product-map" data-component="product-map">
+    <h3>Tour Location</h3>
+
+    <div
+      id="tour-map-{{ product.id }}"
+      class="map-container"
+      data-latitude="{{ product.metafields.custom.map_latitude }}"
+      data-longitude="{{ product.metafields.custom.map_longitude }}"
+      data-zoom="{{ product.metafields.custom.map_zoom | default: 13 }}"
+      data-marker-title="{{ product.title | escape }}"
+    >
+      <div class="map-placeholder">
+        <button type="button" class="btn-load-map">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <span>Load Map</span>
+        </button>
+      </div>
+    </div>
+
+    {% if product.metafields.custom.meeting_point %}
+      <div class="meeting-point">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+        <div class="meeting-point-info">
+          <strong>Meeting Point:</strong>
+          <p>{{ product.metafields.custom.meeting_point }}</p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+<script>
+  // Map loading handled in assets/product-page.js
+</script>

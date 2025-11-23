@@ -1,0 +1,77 @@
+{% comment %}
+  Product Structured Data (Schema.org)
+  SEO optimization for tours and activities
+{% endcomment %}
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TouristAttraction",
+  "name": {{ product.title | json }},
+  "description": {{ product.description | strip_html | truncate: 200 | json }},
+  {% if product.featured_image %}
+  "image": {{ product.featured_image | img_url: '1200x1200' | prepend: 'https:' | json }},
+  {% endif %}
+  {% if product.metafields.custom.map_latitude and product.metafields.custom.map_longitude %}
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": {{ product.metafields.custom.map_latitude | json }},
+    "longitude": {{ product.metafields.custom.map_longitude | json }}
+  },
+  {% endif %}
+  "offers": {
+    "@type": "Offer",
+    "url": {{ product.url | within: collection | prepend: shop.url | json }},
+    "priceCurrency": {{ cart.currency.iso_code | json }},
+    "price": {{ product.price | divided_by: 100.0 | json }},
+    "availability": "{% if product.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}"
+  }
+  {% if product.metafields.reviews.rating and product.metafields.reviews.count %},
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": {{ product.metafields.reviews.rating | json }},
+    "reviewCount": {{ product.metafields.reviews.count | json }},
+    "bestRating": "5",
+    "worstRating": "1"
+  }
+  {% endif %}
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": {{ product.title | json }},
+  "description": {{ product.description | strip_html | json }},
+  {% if product.featured_image %}
+  "image": [
+    {% for image in product.images limit: 5 %}
+      {{ image | img_url: '1200x1200' | prepend: 'https:' | json }}{% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  ],
+  {% endif %}
+  "brand": {
+    "@type": "Brand",
+    "name": {{ shop.name | json }}
+  },
+  "offers": {
+    "@type": "Offer",
+    "url": {{ product.url | within: collection | prepend: shop.url | json }},
+    "priceCurrency": {{ cart.currency.iso_code | json }},
+    "price": {{ product.price | divided_by: 100.0 | json }},
+    "availability": "{% if product.available %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+    "seller": {
+      "@type": "Organization",
+      "name": {{ shop.name | json }}
+    }
+  }
+  {% if product.metafields.reviews.rating and product.metafields.reviews.count %},
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": {{ product.metafields.reviews.rating | json }},
+    "reviewCount": {{ product.metafields.reviews.count | json }}
+  }
+  {% endif %}
+}
+</script>

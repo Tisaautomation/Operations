@@ -1,0 +1,71 @@
+{% comment %}
+  Product Customer Reviews
+  Displays customer testimonials and ratings
+{% endcomment %}
+
+<div class="product-reviews" data-component="product-reviews">
+  <h3>Customer Reviews</h3>
+
+  {% if product.metafields.reviews.rating and product.metafields.reviews.count %}
+    <div class="reviews-summary">
+      <div class="summary-rating">
+        <span class="rating-number">{{ product.metafields.reviews.rating }}</span>
+        <div class="rating-stars">
+          {% assign rating = product.metafields.reviews.rating | times: 1.0 %}
+          {% for i in (1..5) %}
+            {% if i <= rating %}
+              <span class="star filled">★</span>
+            {% elsif i == rating | plus: 1 and rating != rating | floor %}
+              <span class="star half">★</span>
+            {% else %}
+              <span class="star">☆</span>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <span class="rating-count">Based on {{ product.metafields.reviews.count }} reviews</span>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="reviews-list">
+    {% if product.metafields.custom.reviews %}
+      {% assign reviews = product.metafields.custom.reviews | split: '||' %}
+      {% for review in reviews limit: 6 %}
+        {% assign review_parts = review | split: '|' %}
+        {% if review_parts.size >= 3 %}
+          <div class="review-item">
+            <div class="review-header">
+              <div class="reviewer-info">
+                <span class="reviewer-name">{{ review_parts[0] }}</span>
+                <span class="review-date">{{ review_parts[1] }}</span>
+              </div>
+              <div class="review-rating">
+                {% assign stars = review_parts[2] | times: 1 %}
+                {% for i in (1..5) %}
+                  {% if i <= stars %}
+                    <span class="star filled">★</span>
+                  {% else %}
+                    <span class="star">☆</span>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+            {% if review_parts[3] %}
+              <div class="review-content">
+                <p>{{ review_parts[3] }}</p>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% else %}
+      <div class="reviews-placeholder">
+        <p>Be the first to review this tour!</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="review-cta">
+    <button type="button" class="btn-secondary">Write a Review</button>
+  </div>
+</div>

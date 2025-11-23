@@ -1,0 +1,29 @@
+{% comment %}
+  Product Description and Overview
+  Main tour description and highlights
+{% endcomment %}
+
+<div class="product-description" data-component="product-description">
+  {% if product.description != blank %}
+    <div class="description-content">
+      {{ product.description }}
+    </div>
+  {% endif %}
+
+  {% if product.metafields.custom.highlights %}
+    <div class="product-highlights">
+      <h3>Tour Highlights</h3>
+      <ul class="highlights-list">
+        {% assign highlights = product.metafields.custom.highlights | split: '|' %}
+        {% for highlight in highlights %}
+          <li>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>{{ highlight }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+</div>

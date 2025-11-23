@@ -1,0 +1,201 @@
+{% comment %}
+  Main Product Template - Optimized
+  Original: 1,618 lines | Optimized: <300 lines
+  All inline CSS/JS extracted to assets
+  Components split into reusable snippets
+{% endcomment %}
+
+{{ 'product-page.css' | asset_url | stylesheet_tag }}
+{{ 'location-picker.css' | asset_url | stylesheet_tag }}
+
+<div class="product-page" data-product-id="{{ product.id }}">
+  {%- comment -%} Product Schema for SEO {%- endcomment -%}
+  {% render 'product-schema', product: product %}
+
+  {%- comment -%} Main Product Grid {%- endcomment -%}
+  <div class="product-grid">
+    {%- comment -%} Left Column: Gallery {%- endcomment -%}
+    <div class="product-column-left">
+      {% render 'product-gallery', product: product %}
+    </div>
+
+    {%- comment -%} Right Column: Info + Booking {%- endcomment -%}
+    <div class="product-column-right">
+      {% render 'product-info', product: product %}
+      {% render 'product-booking-form', product: product %}
+    </div>
+  </div>
+
+  {%- comment -%} Product Content Sections {%- endcomment -%}
+  <div class="product-content">
+    {%- comment -%} Description {%- endcomment -%}
+    {% if product.description != blank or product.metafields.custom.highlights %}
+      <section class="product-section">
+        {% render 'product-description', product: product %}
+      </section>
+    {% endif %}
+
+    {%- comment -%} Itinerary {%- endcomment -%}
+    {% if product.metafields.custom.itinerary %}
+      <section class="product-section">
+        {% render 'product-itinerary', product: product %}
+      </section>
+    {% endif %}
+
+    {%- comment -%} What's Included {%- endcomment -%}
+    {% if product.metafields.custom.included or product.metafields.custom.excluded %}
+      <section class="product-section">
+        {% render 'product-whats-included', product: product %}
+      </section>
+    {% endif %}
+
+    {%- comment -%} Tour Location Map {%- endcomment -%}
+    {% if product.metafields.custom.map_latitude and product.metafields.custom.map_longitude %}
+      <section class="product-section">
+        {% render 'product-map', product: product %}
+      </section>
+    {% endif %}
+
+    {%- comment -%} Customer Reviews {%- endcomment -%}
+    <section class="product-section">
+      {% render 'product-reviews', product: product %}
+    </section>
+  </div>
+
+  {%- comment -%} Related Products / Recommended Tours {%- endcomment -%}
+  {% if section.settings.show_related_products %}
+    <div class="related-products-section">
+      <h3>{{ section.settings.related_products_heading | default: 'You May Also Like' }}</h3>
+      <div class="related-products-grid">
+        {% comment %}
+          Related products can be added here
+          Using collections like 'private-tours', 'joint-tours', etc.
+        {% endcomment %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{%- comment -%} Load JavaScript (deferred for performance) {%- endcomment -%}
+<script src="{{ 'product-page.js' | asset_url }}" defer></script>
+<script src="{{ 'location-picker.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "Product",
+  "class": "product-template",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Product Display"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "Show vendor",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sku",
+      "label": "Show SKU",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_share_buttons",
+      "label": "Show social share buttons",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Related Products"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_related_products",
+      "label": "Show related products",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "related_products_heading",
+      "label": "Related products heading",
+      "default": "You May Also Like"
+    },
+    {
+      "type": "range",
+      "id": "related_products_count",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "default": 4,
+      "label": "Number of related products"
+    },
+    {
+      "type": "header",
+      "content": "Performance"
+    },
+    {
+      "type": "checkbox",
+      "id": "lazy_load_images",
+      "label": "Lazy load images",
+      "default": true,
+      "info": "Images beyond the first 3 will load on scroll"
+    },
+    {
+      "type": "checkbox",
+      "id": "defer_map_loading",
+      "label": "Defer map loading",
+      "default": true,
+      "info": "Load map only when user clicks or scrolls to it"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "text",
+      "name": "Text",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Text block"
+        }
+      ]
+    },
+    {
+      "type": "title",
+      "name": "Title",
+      "limit": 1
+    },
+    {
+      "type": "price",
+      "name": "Price",
+      "limit": 1
+    },
+    {
+      "type": "description",
+      "name": "Description",
+      "limit": 1
+    },
+    {
+      "type": "share",
+      "name": "Share",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "paragraph",
+          "content": "Add sharing buttons for social media"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product page",
+      "category": "Product"
+    }
+  ]
+}
+{% endschema %}

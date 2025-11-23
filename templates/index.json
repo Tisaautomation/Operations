@@ -1,0 +1,106 @@
+{
+  "sections": {
+    "hero": {
+      "type": "hero-banner",
+      "settings": {
+        "heading": "Discover Koh Samui's Best Tours",
+        "subheading": "Premium Experiences from Verified Local Operators",
+        "cta_text": "Explore Tours",
+        "cta_link": "/collections/all",
+        "height": 600,
+        "mobile_height": 400
+      }
+    },
+    "features": {
+      "type": "feature-slides",
+      "blocks": {
+        "feature-1": {
+          "type": "feature",
+          "settings": {
+            "icon": "verified",
+            "title": "Verified Operators",
+            "description": "All tour operators are verified and licensed for your safety"
+          }
+        },
+        "feature-2": {
+          "type": "feature",
+          "settings": {
+            "icon": "shield",
+            "title": "Free Cancellation",
+            "description": "Cancel up to 24 hours before your tour for a full refund"
+          }
+        },
+        "feature-3": {
+          "type": "feature",
+          "settings": {
+            "icon": "support",
+            "title": "24/7 Support",
+            "description": "Our team is always available to assist you"
+          }
+        },
+        "feature-4": {
+          "type": "feature",
+          "settings": {
+            "icon": "star",
+            "title": "Premium Experiences",
+            "description": "Hand-picked tours for unforgettable adventures"
+          }
+        }
+      },
+      "block_order": [
+        "feature-1",
+        "feature-2",
+        "feature-3",
+        "feature-4"
+      ],
+      "settings": {
+        "heading": "Why Book With Us",
+        "subheading": "Experience the best of Koh Samui with verified operators and premium service"
+      }
+    },
+    "promotions": {
+      "type": "product-carousel",
+      "settings": {
+        "heading": "Special Promotions",
+        "collection": "promotions",
+        "products_to_show": 6,
+        "background_color": "#FFFFFF"
+      }
+    },
+    "private-tours": {
+      "type": "product-carousel",
+      "settings": {
+        "heading": "Private Tours",
+        "collection": "private-tours",
+        "products_to_show": 6,
+        "background_color": "#F8F8F8"
+      }
+    },
+    "joint-tours": {
+      "type": "product-carousel",
+      "settings": {
+        "heading": "Join Group Tours",
+        "collection": "joint-tours",
+        "products_to_show": 6,
+        "background_color": "#FFFFFF"
+      }
+    },
+    "family-tours": {
+      "type": "product-carousel",
+      "settings": {
+        "heading": "Family-Friendly Tours",
+        "collection": "recommended-for-families",
+        "products_to_show": 6,
+        "background_color": "#F8F8F8"
+      }
+    }
+  },
+  "order": [
+    "hero",
+    "features",
+    "promotions",
+    "private-tours",
+    "joint-tours",
+    "family-tours"
+  ]
+}

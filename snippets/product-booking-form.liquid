@@ -1,0 +1,171 @@
+{% comment %}
+  Product Booking Form with WhatsApp and Google Maps Location Picker
+  Captures: Date, Adults, Children, Pickup Location, WhatsApp, Special Requests
+{% endcomment %}
+
+<div class="product-booking-form" data-component="booking-form">
+  <form method="post" action="/cart/add" id="product-form-{{ product.id }}" accept-charset="UTF-8" class="booking-form" enctype="multipart/form-data">
+    <input type="hidden" name="form_type" value="product">
+    <input type="hidden" name="utf8" value="✓">
+    <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+    <input type="hidden" name="product-id" value="{{ product.id }}">
+
+    <h3 class="form-heading">Book Your Experience</h3>
+
+    {%- comment -%} Date Selection {%- endcomment -%}
+    <div class="form-field">
+      <label for="booking-date-{{ product.id }}">
+        Tour Date <span class="field-required">*</span>
+      </label>
+      <input
+        type="date"
+        id="booking-date-{{ product.id }}"
+        name="properties[Tour Date]"
+        min="{{ 'now' | date: '%Y-%m-%d' }}"
+        required
+        class="input-date"
+      >
+    </div>
+
+    {%- comment -%} Number of Guests {%- endcomment -%}
+    <div class="form-row">
+      <div class="form-field">
+        <label for="adults-{{ product.id }}">
+          Adults <span class="field-required">*</span>
+        </label>
+        <input
+          type="number"
+          id="adults-{{ product.id }}"
+          name="properties[Adults]"
+          min="1"
+          max="20"
+          value="2"
+          required
+        >
+      </div>
+
+      <div class="form-field">
+        <label for="children-{{ product.id }}">
+          Children
+          <span class="field-note">(0-12 years)</span>
+        </label>
+        <input
+          type="number"
+          id="children-{{ product.id }}"
+          name="properties[Children]"
+          min="0"
+          max="10"
+          value="0"
+        >
+      </div>
+    </div>
+
+    {%- comment -%} WhatsApp Number Field {%- endcomment -%}
+    <div class="form-field">
+      <label for="customer-whatsapp-{{ product.id }}">
+        WhatsApp Number
+        <span class="field-required">*</span>
+        <span class="field-note">For driver coordination only</span>
+      </label>
+      <input
+        type="tel"
+        id="customer-whatsapp-{{ product.id }}"
+        name="properties[WhatsApp]"
+        placeholder="+66 XX XXX XXXX"
+        pattern="[+]?[0-9\s-]+"
+        required
+      >
+      <small class="field-help">
+        This number is only shared with your driver to coordinate pickup
+      </small>
+    </div>
+
+    {%- comment -%} Location Picker with Google Maps {%- endcomment -%}
+    <div class="form-field">
+      <label for="pickup-location-{{ product.id }}">
+        Pickup Location
+        <span class="field-required">*</span>
+      </label>
+
+      <div class="location-input-wrapper">
+        <input
+          type="text"
+          id="pickup-location-display-{{ product.id }}"
+          name="properties[Pickup Location]"
+          placeholder="Click map to choose location"
+          required
+          readonly
+        >
+        <button
+          type="button"
+          class="btn-location-picker"
+          data-opens="location-modal"
+          data-product-id="{{ product.id }}"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          Choose on Map
+        </button>
+      </div>
+
+      <input
+        type="hidden"
+        id="pickup-latitude-{{ product.id }}"
+        name="properties[Pickup Latitude]"
+      >
+      <input
+        type="hidden"
+        id="pickup-longitude-{{ product.id }}"
+        name="properties[Pickup Longitude]"
+      >
+    </div>
+
+    {%- comment -%} Special Requests {%- endcomment -%}
+    <div class="form-field">
+      <label for="special-requests-{{ product.id }}">
+        Special Requests
+        <span class="field-note">(Optional)</span>
+      </label>
+      <textarea
+        id="special-requests-{{ product.id }}"
+        name="properties[Special Requests]"
+        rows="3"
+        placeholder="Any dietary requirements, accessibility needs, or special occasions..."
+      ></textarea>
+    </div>
+
+    {%- comment -%} Submit Button {%- endcomment -%}
+    <div class="form-actions">
+      <button
+        type="submit"
+        name="add"
+        class="btn-book"
+        {% if product.selected_or_first_available_variant.available == false %}disabled{% endif %}
+      >
+        {% if product.selected_or_first_available_variant.available %}
+          <span>Book Now - {{ product.selected_or_first_available_variant.price | money }}</span>
+        {% else %}
+          <span>Sold Out</span>
+        {% endif %}
+      </button>
+    </div>
+
+    <div class="booking-note">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+      <span>Free cancellation up to 24 hours before the tour</span>
+    </div>
+  </form>
+
+  {%- comment -%} Include Location Picker Modal {%- endcomment -%}
+  {% render 'location-picker', product_id: product.id %}
+</div>
+
+<script>
+  // Form validation and interaction handled in assets/product-page.js
+</script>

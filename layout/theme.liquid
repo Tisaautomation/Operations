@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="{{ request.locale.iso_code }}">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#00CED1">
+
+  {%- comment -%} Preconnect to critical resources for performance {%- endcomment -%}
+  <link rel="preconnect" href="https://cdn.shopify.com" crossorigin>
+  {% if settings.preconnect_google_fonts %}
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  {% endif %}
+
+  {%- comment -%} DNS prefetch for external resources {%- endcomment -%}
+  <link rel="dns-prefetch" href="https://maps.googleapis.com">
+  <link rel="dns-prefetch" href="https://api.mapbox.com">
+
+  {%- if settings.favicon != blank -%}
+    <link rel="icon" type="image/png" href="{{ settings.favicon | img_url: '32x32' }}">
+  {%- endif -%}
+
+  {%- unless settings.type_header_font.system? -%}
+    <link rel="preload" as="font" href="{{ settings.type_header_font | font_url }}" type="font/woff2" crossorigin>
+  {%- endunless -%}
+  {%- unless settings.type_body_font.system? -%}
+    <link rel="preload" as="font" href="{{ settings.type_body_font | font_url }}" type="font/woff2" crossorigin>
+  {%- endunless -%}
+
+  <title>
+    {{ page_title }}
+    {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}
+    {%- if current_page != 1 %} &ndash; Page {{ current_page }}{% endif -%}
+    {%- unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless -%}
+  </title>
+
+  {% if page_description %}
+    <meta name="description" content="{{ page_description | escape }}">
+  {% endif %}
+
+  {% render 'meta-tags' %}
+  {% render 'social-meta-tags' %}
+
+  {%- comment -%} Critical CSS inline for above-the-fold content {%- endcomment -%}
+  <style>
+    :root {
+      --font-heading: {{ settings.type_header_font.family }}, {{ settings.type_header_font.fallback_families }};
+      --font-body: {{ settings.type_body_font.family }}, {{ settings.type_body_font.fallback_families }};
+      --font-subheading: {{ settings.type_subheading_font.family }}, {{ settings.type_subheading_font.fallback_families }};
+
+      --color-primary: #00CED1;
+      --color-primary-hover: #009FA3;
+      --color-secondary: #9370DB;
+      --color-text: #2F2F2F;
+      --color-heading: #00CED1;
+      --color-background: #FFFFFF;
+      --color-border: #E8E8E8;
+
+      --radius-button: {{ settings.button_border_radius_primary }}px;
+      --radius-card: {{ settings.card_corner_radius }}px;
+      --radius-input: {{ settings.input_border_radius }}px;
+      --radius-badge: {{ settings.badge_corner_radius }}px;
+
+      --spacing-xs: 4px;
+      --spacing-sm: 8px;
+      --spacing-md: 16px;
+      --spacing-lg: 24px;
+      --spacing-xl: 40px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-size: {{ settings.type_body_base_size }}px;
+      line-height: 1.6;
+      color: var(--color-text);
+      background: var(--color-background);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--color-heading);
+    }
+
+    h1 { font-size: {{ settings.heading_scale_h1 }}px; }
+    h2 { font-size: {{ settings.heading_scale_h2 }}px; }
+    h3 { font-size: {{ settings.heading_scale_h3 }}px; }
+    h4 { font-size: {{ settings.heading_scale_h4 | default: 28 }}px; }
+    h5 { font-size: {{ settings.heading_scale_h5 | default: 18 }}px; }
+    h6 { font-size: {{ settings.heading_scale_h6 | default: 16 }}px; }
+
+    a {
+      color: var(--color-primary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    a:hover {
+      color: var(--color-primary-hover);
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Loading indicator */
+    .page-loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #00CED1, #9370DB);
+      z-index: 99999;
+      animation: loading 2s ease-in-out infinite;
+    }
+
+    @keyframes loading {
+      0%, 100% { transform: translateX(-100%); }
+      50% { transform: translateX(100%); }
+    }
+  </style>
+
+  {{ content_for_header }}
+
+  {%- comment -%} Global theme settings for JavaScript {%- endcomment -%}
+  <script>
+    window.themeSettings = {
+      googleMapsApiKey: {{ settings.google_maps_api_key | json }},
+      mapboxToken: {{ settings.mapbox_access_token | json }},
+      moneyFormat: {{ shop.money_format | json }},
+      shopCurrency: {{ shop.currency | json }},
+      cartType: {{ settings.cart_type | json }}
+    };
+  </script>
+</head>
+
+<body class="template-{{ template.name }}">
+  <a class="skip-to-content-link" href="#MainContent">
+    Skip to content
+  </a>
+
+  {% section 'header' %}
+
+  <main id="MainContent" role="main" tabindex="-1">
+    {{ content_for_layout }}
+  </main>
+
+  {% section 'footer' %}
+
+  {%- comment -%} Deferred CSS loading for non-critical styles {%- endcomment -%}
+  <link rel="stylesheet" href="{{ 'theme.css' | asset_url }}" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="{{ 'theme.css' | asset_url }}"></noscript>
+
+  {%- comment -%} Deferred JavaScript loading {%- endcomment -%}
+  {% if settings.defer_javascript %}
+    <script src="{{ 'theme.js' | asset_url }}" defer></script>
+  {% else %}
+    <script src="{{ 'theme.js' | asset_url }}"></script>
+  {% endif %}
+
+  {%- comment -%} Cart drawer or modal {%- endcomment -%}
+  {% if settings.cart_type == 'drawer' %}
+    {% render 'cart-drawer' %}
+  {% endif %}
+
+  {%- comment -%} Structured data for organization {%- endcomment -%}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": {{ shop.name | json }},
+    "url": {{ shop.url | json }},
+    {% if settings.logo %}
+      "logo": {{ settings.logo | img_url: '200x' | prepend: 'https:' | json }},
+    {% endif %}
+    "sameAs": [
+      {{ settings.social_facebook_link | json }},
+      {{ settings.social_instagram_link | json }},
+      {{ settings.social_youtube_link | json }}
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "Customer Service"
+    }
+  }
+  </script>
+</body>
+</html>

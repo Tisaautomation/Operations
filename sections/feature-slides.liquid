@@ -1,0 +1,247 @@
+{% comment %}
+  Feature Slides Section - Optimized
+  Display key features or benefits of booking with TourInKohSamui
+{% endcomment %}
+
+<style>
+  #features-{{ section.id }} {
+    padding: 80px 20px;
+    background: linear-gradient(135deg, rgba(0, 206, 209, 0.05), rgba(147, 112, 219, 0.05));
+  }
+
+  #features-{{ section.id }} .features-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  #features-{{ section.id }} .features-heading {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: clamp(32px, 4vw, 48px);
+    color: #2F2F2F;
+    text-align: center;
+    margin: 0 0 16px 0;
+  }
+
+  #features-{{ section.id }} .features-subheading {
+    font-size: clamp(16px, 2vw, 18px);
+    color: #666;
+    text-align: center;
+    margin: 0 0 60px 0;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  #features-{{ section.id }} .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 40px;
+  }
+
+  #features-{{ section.id }} .feature-item {
+    text-align: center;
+    padding: 32px 24px;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  #features-{{ section.id }} .feature-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  #features-{{ section.id }} .feature-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 24px;
+    background: linear-gradient(135deg, rgba(0, 206, 209, 0.1), rgba(147, 112, 219, 0.1));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #features-{{ section.id }} .feature-icon svg,
+  #features-{{ section.id }} .feature-icon img {
+    width: 40px;
+    height: 40px;
+    color: #00CED1;
+  }
+
+  #features-{{ section.id }} .feature-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: #2F2F2F;
+    margin: 0 0 12px 0;
+  }
+
+  #features-{{ section.id }} .feature-description {
+    font-size: 15px;
+    line-height: 1.6;
+    color: #666;
+    margin: 0;
+  }
+
+  @media (max-width: 768px) {
+    #features-{{ section.id }} {
+      padding: 50px 20px;
+    }
+
+    #features-{{ section.id }} .features-grid {
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+  }
+</style>
+
+<section id="features-{{ section.id }}" class="features-section">
+  <div class="features-container">
+    {% if section.settings.heading %}
+      <h2 class="features-heading">{{ section.settings.heading }}</h2>
+    {% endif %}
+
+    {% if section.settings.subheading %}
+      <p class="features-subheading">{{ section.settings.subheading }}</p>
+    {% endif %}
+
+    <div class="features-grid">
+      {% for block in section.blocks %}
+        <div class="feature-item" {{ block.shopify_attributes }}>
+          <div class="feature-icon">
+            {% if block.settings.icon == 'verified' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            {% elsif block.settings.icon == 'shield' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+            {% elsif block.settings.icon == 'support' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+            {% elsif block.settings.icon == 'calendar' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            {% elsif block.settings.icon == 'star' %}
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+            {% elsif block.settings.icon == 'heart' %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+              </svg>
+            {% else %}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 13l4 4L19 7"/>
+              </svg>
+            {% endif %}
+          </div>
+
+          <h3 class="feature-title">{{ block.settings.title }}</h3>
+          <p class="feature-description">{{ block.settings.description }}</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Feature Slides",
+  "class": "features-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Why Book With Us"
+    },
+    {
+      "type": "textarea",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "Experience the best of Koh Samui with verified operators and premium service"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "feature",
+      "name": "Feature",
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            { "value": "verified", "label": "Verified" },
+            { "value": "shield", "label": "Shield" },
+            { "value": "support", "label": "Support" },
+            { "value": "calendar", "label": "Calendar" },
+            { "value": "star", "label": "Star" },
+            { "value": "heart", "label": "Heart" }
+          ],
+          "default": "verified"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "default": "Verified Operators"
+        },
+        {
+          "type": "textarea",
+          "id": "description",
+          "label": "Description",
+          "default": "All tour operators are verified and licensed for your safety"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Feature Slides",
+      "category": "Features",
+      "blocks": [
+        {
+          "type": "feature",
+          "settings": {
+            "icon": "verified",
+            "title": "Verified Operators",
+            "description": "All tour operators are verified and licensed for your safety"
+          }
+        },
+        {
+          "type": "feature",
+          "settings": {
+            "icon": "shield",
+            "title": "Free Cancellation",
+            "description": "Cancel up to 24 hours before your tour for a full refund"
+          }
+        },
+        {
+          "type": "feature",
+          "settings": {
+            "icon": "support",
+            "title": "24/7 Support",
+            "description": "Our team is always available to assist you"
+          }
+        },
+        {
+          "type": "feature",
+          "settings": {
+            "icon": "star",
+            "title": "Premium Experiences",
+            "description": "Hand-picked tours for unforgettable adventures"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

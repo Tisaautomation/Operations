@@ -1,0 +1,129 @@
+{
+  "current": {
+    "sections": {
+      "header": {
+        "type": "header",
+        "settings": {
+          "logo_height": 42,
+          "logo_height_mobile": 32,
+          "sticky_header": true
+        }
+      },
+      "footer": {
+        "type": "footer",
+        "settings": {
+          "footer_description": "Koh Samui's Premier Tour Marketplace - Verified Local Operators, Premium Experiences, Unforgettable Adventures",
+          "show_social_icons": true
+        }
+      }
+    },
+    "content_for_index": []
+  },
+  "presets": {
+    "Default": {
+      "logo_height": 42,
+      "logo_height_mobile": 32,
+      "page_width": "wide",
+      "card_hover_effect": "lift",
+      "badge_position": "top-right",
+      "badge_corner_radius": 12,
+      "button_border_radius_primary": 20,
+      "button_border_radius_secondary": 20,
+      "product_corner_radius": 16,
+      "card_corner_radius": 16,
+      "input_border_radius": 12,
+      "popover_border_radius": 16,
+      "variant_swatch_size": 40,
+      "variant_swatch_radius": 12,
+      "type_header_font": "poppins_n7",
+      "type_header_base_size": 62,
+      "type_header_line_height": 1.2,
+      "type_subheading_font": "inter_n5",
+      "type_subheading_base_size": 18,
+      "type_body_font": "inter_n4",
+      "type_body_base_size": 16,
+      "type_body_line_height": 1.6,
+      "type_accent_font": "poppins_n7",
+      "heading_scale_h1": 62,
+      "heading_scale_h2": 48,
+      "heading_scale_h3": 36,
+      "heading_scale_h4": 28,
+      "heading_scale_h5": 18,
+      "heading_scale_h6": 16,
+      "colors_scheme_turquoise": {
+        "name": "Turquoise",
+        "settings": {
+          "background": "#FFFFFF",
+          "background_gradient": "",
+          "text": "#2F2F2F",
+          "heading": "#00CED1",
+          "primary": "#00CED1",
+          "primary_hover": "#009FA3",
+          "secondary": "#9370DB",
+          "border": "#E8E8E8",
+          "button_text": "#FFFFFF",
+          "button_background": "linear-gradient(90deg, #00CED1, #9370DB)",
+          "button_hover": "#009FA3",
+          "link": "#00CED1",
+          "link_hover": "#009FA3"
+        }
+      },
+      "colors_scheme_purple": {
+        "name": "Purple",
+        "settings": {
+          "background": "#2F2F2F",
+          "background_gradient": "",
+          "text": "#FFFFFF",
+          "heading": "#FFFFFF",
+          "primary": "#9370DB",
+          "primary_hover": "#7A5FD6",
+          "secondary": "#00CED1",
+          "border": "#444444",
+          "button_text": "#FFFFFF",
+          "button_background": "linear-gradient(90deg, #00CED1, #9370DB)",
+          "button_hover": "#7A5FD6",
+          "link": "#9370DB",
+          "link_hover": "#7A5FD6"
+        }
+      },
+      "colors_scheme_grey": {
+        "name": "Grey",
+        "settings": {
+          "background": "#F8F8F8",
+          "background_gradient": "",
+          "text": "#2F2F2F",
+          "heading": "#2F2F2F",
+          "primary": "#666666",
+          "primary_hover": "#4A4A4A",
+          "secondary": "#00CED1",
+          "border": "#E8E8E8",
+          "button_text": "#FFFFFF",
+          "button_background": "#666666",
+          "button_hover": "#4A4A4A",
+          "link": "#666666",
+          "link_hover": "#4A4A4A"
+        }
+      },
+      "social_facebook_link": "https://facebook.com/tourinkohsamui",
+      "social_instagram_link": "https://instagram.com/tourinkohsamui",
+      "social_youtube_link": "https://youtube.com/@tourinkohsamui",
+      "social_twitter_link": "",
+      "social_pinterest_link": "",
+      "social_tiktok_link": "",
+      "google_maps_api_key": "",
+      "mapbox_access_token": "",
+      "predictive_search_enabled": true,
+      "predictive_search_show_vendor": false,
+      "predictive_search_show_price": true,
+      "currency_code_enabled": true,
+      "cart_type": "drawer",
+      "show_vendor": false,
+      "show_cart_note": true,
+      "checkout_logo_image": "",
+      "checkout_logo_position": "left",
+      "checkout_sidebar_background_color": "#F8F8F8",
+      "checkout_accent_color": "#00CED1",
+      "checkout_button_color": "#00CED1"
+    }
+  }
+}

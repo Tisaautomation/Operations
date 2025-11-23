@@ -1,0 +1,63 @@
+{% comment %}
+  What's Included / Excluded
+  Shows tour inclusions and exclusions
+{% endcomment %}
+
+<div class="product-inclusions" data-component="product-inclusions">
+  <div class="inclusions-grid">
+    {% if product.metafields.custom.included %}
+      <div class="inclusions-column">
+        <h3>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          What's Included
+        </h3>
+        <ul class="inclusions-list included">
+          {% assign included_items = product.metafields.custom.included | split: '|' %}
+          {% for item in included_items %}
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>{{ item }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    {% if product.metafields.custom.excluded %}
+      <div class="inclusions-column">
+        <h3>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          What's Not Included
+        </h3>
+        <ul class="inclusions-list excluded">
+          {% assign excluded_items = product.metafields.custom.excluded | split: '|' %}
+          {% for item in excluded_items %}
+            <li>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span>{{ item }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if product.metafields.custom.important_info %}
+    <div class="important-info">
+      <h4>Important Information</h4>
+      <div class="info-content">
+        {{ product.metafields.custom.important_info }}
+      </div>
+    </div>
+  {% endif %}
+</div>

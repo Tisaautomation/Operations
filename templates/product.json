@@ -1,0 +1,30 @@
+{
+  "sections": {
+    "main": {
+      "type": "main-product",
+      "settings": {
+        "show_vendor": false,
+        "show_sku": false,
+        "show_share_buttons": true,
+        "show_related_products": true,
+        "related_products_heading": "You May Also Like",
+        "related_products_count": 4,
+        "lazy_load_images": true,
+        "defer_map_loading": true
+      }
+    },
+    "related-products": {
+      "type": "product-carousel",
+      "settings": {
+        "heading": "Recommended Tours",
+        "collection": "recommended-for-families",
+        "products_to_show": 6,
+        "background_color": "#F8F8F8"
+      }
+    }
+  },
+  "order": [
+    "main",
+    "related-products"
+  ]
+}

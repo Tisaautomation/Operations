@@ -1,0 +1,30 @@
+{% comment %}
+  Product Itinerary Timeline
+  Shows tour schedule with times and activities
+{% endcomment %}
+
+{% if product.metafields.custom.itinerary %}
+  <div class="product-itinerary" data-component="product-itinerary">
+    <h3>Tour Itinerary</h3>
+
+    <div class="itinerary-timeline">
+      {% assign itinerary_items = product.metafields.custom.itinerary | split: '||' %}
+      {% for item in itinerary_items %}
+        {% assign item_parts = item | split: '|' %}
+        {% if item_parts.size >= 2 %}
+          <div class="itinerary-item">
+            <div class="itinerary-time">
+              <span class="time-badge">{{ item_parts[0] }}</span>
+            </div>
+            <div class="itinerary-content">
+              <h4>{{ item_parts[1] }}</h4>
+              {% if item_parts[2] %}
+                <p>{{ item_parts[2] }}</p>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}

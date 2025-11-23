@@ -1,0 +1,86 @@
+{% comment %}
+  Product Info: Title, Price, Ratings, Quick Facts
+  Displays key product information above booking form
+{% endcomment %}
+
+<div class="product-info" data-component="product-info">
+  {% if product.metafields.custom.badge %}
+    <span class="product-badge">{{ product.metafields.custom.badge }}</span>
+  {% endif %}
+
+  <h1 class="product-title">{{ product.title }}</h1>
+
+  {% if product.metafields.custom.subtitle %}
+    <p class="product-subtitle">{{ product.metafields.custom.subtitle }}</p>
+  {% endif %}
+
+  <div class="product-meta">
+    <div class="product-price">
+      {% if product.compare_at_price > product.price %}
+        <span class="price-compare">{{ product.compare_at_price | money }}</span>
+        <span class="price-sale">{{ product.price | money }}</span>
+        <span class="price-save">
+          Save {{ product.compare_at_price | minus: product.price | money }}
+        </span>
+      {% else %}
+        <span class="price-regular">From {{ product.price | money }}</span>
+      {% endif %}
+      <span class="price-note">per person</span>
+    </div>
+
+    {% if product.metafields.reviews.rating %}
+      <div class="product-rating">
+        <div class="stars" data-rating="{{ product.metafields.reviews.rating }}">
+          {% assign rating = product.metafields.reviews.rating | times: 1.0 %}
+          {% for i in (1..5) %}
+            {% if i <= rating %}
+              <span class="star filled">★</span>
+            {% elsif i == rating | plus: 1 and rating != rating | floor %}
+              <span class="star half">★</span>
+            {% else %}
+              <span class="star">☆</span>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <span class="rating-count">
+          ({{ product.metafields.reviews.rating }} - {{ product.metafields.reviews.count }} reviews)
+        </span>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if product.metafields.custom.duration or product.metafields.custom.pickup or product.metafields.custom.language %}
+    <div class="product-quick-facts">
+      {% if product.metafields.custom.duration %}
+        <div class="quick-fact">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span>{{ product.metafields.custom.duration }}</span>
+        </div>
+      {% endif %}
+
+      {% if product.metafields.custom.pickup %}
+        <div class="quick-fact">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <span>{{ product.metafields.custom.pickup }}</span>
+        </div>
+      {% endif %}
+
+      {% if product.metafields.custom.language %}
+        <div class="quick-fact">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          <span>{{ product.metafields.custom.language }}</span>
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>

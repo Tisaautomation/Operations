@@ -1,0 +1,71 @@
+{% comment %}
+  Google Maps Location Picker Modal
+  Allows customers to select pickup location visually
+  Saves coordinates and formatted address
+{% endcomment %}
+
+<div id="location-modal-{{ product_id }}" class="modal location-modal" hidden>
+  <div class="modal-overlay" data-closes="location-modal"></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Select Pickup Location</h3>
+      <button type="button" class="modal-close" data-closes="location-modal" aria-label="Close">
+        ×
+      </button>
+    </div>
+
+    <div class="modal-body">
+      {%- comment -%} Google Maps Search Box {%- endcomment -%}
+      <div class="map-search-wrapper">
+        <input
+          type="text"
+          id="map-search-input-{{ product_id }}"
+          placeholder="Search for your hotel or address in Koh Samui..."
+          class="map-search-input"
+        >
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+      </div>
+
+      {%- comment -%} Google Map Container {%- endcomment -%}
+      <div id="location-map-{{ product_id }}" class="location-map"></div>
+
+      {%- comment -%} Selected Location Display {%- endcomment -%}
+      <div class="selected-location-display">
+        <div class="location-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+        </div>
+        <p id="selected-address-{{ product_id }}" class="selected-address">
+          Click on the map or search to select your pickup location
+        </p>
+      </div>
+
+      <div class="location-help">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <span>Drag the marker to adjust the exact pickup point</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" data-closes="location-modal">
+        Cancel
+      </button>
+      <button type="button" class="btn-primary" id="confirm-location-{{ product_id }}" disabled>
+        Confirm Location
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Location picker functionality handled in assets/location-picker.js
+</script>
