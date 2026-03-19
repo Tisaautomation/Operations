@@ -9,6 +9,7 @@
     <input type="hidden" name="utf8" value="✓">
     <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
     <input type="hidden" name="product-id" value="{{ product.id }}">
+    <input type="hidden" id="own-arrival-flag-{{ product.id }}" name="properties[Own Arrival]" value="false">
 
     <h3 class="form-heading">Book Your Experience</h3>
 
@@ -80,19 +81,35 @@
       </small>
     </div>
 
-    {%- comment -%} Location Picker with Google Maps {%- endcomment -%}
-    <div class="form-field">
+    {%- comment -%} Location Picker with Google Maps + Own Arrival Toggle {%- endcomment -%}
+    <div class="form-field" id="pickup-field-{{ product.id }}">
       <label for="pickup-location-{{ product.id }}">
-        Pickup Location
-        <span class="field-required">*</span>
+        Pick-up Location
+        <span class="field-required" id="pickup-required-star-{{ product.id }}">*</span>
       </label>
 
-      <div class="location-input-wrapper">
+      {%- comment -%} Own Arrival Button — shown by default above the map input {%- endcomment -%}
+      <button
+        type="button"
+        id="own-arrival-btn-{{ product.id }}"
+        class="btn-own-arrival"
+        data-product-id="{{ product.id }}"
+        data-state="off"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M13 4v16M13 4L9 8M13 4l4 4"/>
+          <path d="M6 20h12"/>
+        </svg>
+        I don't need pickup — I'll go myself
+      </button>
+
+      {%- comment -%} Map picker wrapper — hidden when own arrival is selected {%- endcomment -%}
+      <div class="location-input-wrapper" id="location-map-wrapper-{{ product.id }}">
         <input
           type="text"
           id="pickup-location-display-{{ product.id }}"
           name="properties[Pickup Location]"
-          placeholder="Click map to choose location"
+          placeholder="Click to select on map"
           required
           readonly
         >
