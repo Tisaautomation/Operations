@@ -2,6 +2,7 @@
  * Google Maps Location Picker
  * Allows users to select pickup location visually on a map
  * Saves coordinates and formatted address to booking form
+ * Includes "Own Arrival" toggle — hides map, sets flag, updates button
  */
 
 class LocationPicker {
@@ -12,18 +13,78 @@ class LocationPicker {
     this.selectedLocation = null;
     this.geocoder = null;
     this.searchBox = null;
+    this.ownArrival = false;
 
     this.initEventListeners();
+    this.initOwnArrivalToggle();
+  }
+
+  initOwnArrivalToggle() {
+    const btn = document.getElementById(`own-arrival-btn-${this.productId}`);
+    if (!btn) return;
+
+    btn.addEventListener('click', () => {
+      this.ownArrival = !this.ownArrival;
+      this.applyOwnArrivalState();
+    });
+  }
+
+  applyOwnArrivalState() {
+    const btn        = document.getElementById(`own-arrival-btn-${this.productId}`);
+    const wrapper    = document.getElementById(`location-map-wrapper-${this.productId}`);
+    const flagInput  = document.getElementById(`own-arrival-flag-${this.productId}`);
+    const locInput   = document.getElementById(`pickup-location-display-${this.productId}`);
+    const latInput   = document.getElementById(`pickup-latitude-${this.productId}`);
+    const lngInput   = document.getElementById(`pickup-longitude-${this.productId}`);
+    const starSpan   = document.getElementById(`pickup-required-star-${this.productId}`);
+
+    if (this.ownArrival) {
+      // OWN ARRIVAL ON
+      btn.setAttribute('data-state', 'on');
+      btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 6L9 17l-5-5"/>
+        </svg>
+        We will send you the location for your OWN arrival
+      `;
+      btn.classList.add('own-arrival-active');
+
+      // Hide map, clear value, remove required
+      if (wrapper)   wrapper.style.display = 'none';
+      if (locInput)  { locInput.value = 'OWN ARRIVAL'; locInput.removeAttribute('required'); }
+      if (latInput)  latInput.value = '';
+      if (lngInput)  lngInput.value = '';
+      if (flagInput) flagInput.value = 'true';
+      if (starSpan)  starSpan.style.display = 'none';
+
+    } else {
+      // OWN ARRIVAL OFF — back to normal
+      btn.setAttribute('data-state', 'off');
+      btn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M13 4v16M13 4L9 8M13 4l4 4"/>
+          <path d="M6 20h12"/>
+        </svg>
+        I don't need pickup — I'll go myself
+      `;
+      btn.classList.remove('own-arrival-active');
+
+      // Show map, clear value, restore required
+      if (wrapper)   wrapper.style.display = '';
+      if (locInput)  { locInput.value = ''; locInput.setAttribute('required', ''); }
+      if (latInput)  latInput.value = '';
+      if (lngInput)  lngInput.value = '';
+      if (flagInput) flagInput.value = 'false';
+      if (starSpan)  starSpan.style.display = '';
+    }
   }
 
   initEventListeners() {
-    // Open modal button
     const openBtn = document.querySelector(`[data-opens="location-modal"][data-product-id="${this.productId}"]`);
     if (openBtn) {
       openBtn.addEventListener('click', () => this.openModal());
     }
 
-    // Close modal buttons
     const modal = document.getElementById(`location-modal-${this.productId}`);
     if (modal) {
       const closeBtns = modal.querySelectorAll('[data-closes="location-modal"]');
@@ -31,14 +92,12 @@ class LocationPicker {
         btn.addEventListener('click', () => this.closeModal());
       });
 
-      // Close on overlay click
       const overlay = modal.querySelector('.modal-overlay');
       if (overlay) {
         overlay.addEventListener('click', () => this.closeModal());
       }
     }
 
-    // Confirm location button
     const confirmBtn = document.getElementById(`confirm-location-${this.productId}`);
     if (confirmBtn) {
       confirmBtn.addEventListener('click', () => this.confirmLocation());
@@ -52,12 +111,10 @@ class LocationPicker {
     modal.hidden = false;
     document.body.style.overflow = 'hidden';
 
-    // Initialize map if not already done
     if (!this.map) {
       await this.loadGoogleMaps();
       this.initMap();
     } else {
-      // Trigger resize to fix any display issues
       google.maps.event.trigger(this.map, 'resize');
     }
   }
@@ -71,14 +128,12 @@ class LocationPicker {
   }
 
   async loadGoogleMaps() {
-    // Check if Google Maps is already loaded
     if (window.google && window.google.maps) {
       return Promise.resolve();
     }
 
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      // NOTE: Replace YOUR_API_KEY with actual Google Maps API key in theme settings
       const apiKey = window.themeSettings?.googleMapsApiKey || 'YOUR_API_KEY';
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
@@ -90,7 +145,6 @@ class LocationPicker {
   }
 
   initMap() {
-    // Default to Koh Samui center
     const kohSamui = { lat: 9.5304, lng: 100.0253 };
 
     const mapElement = document.getElementById(`location-map-${this.productId}`);
@@ -113,17 +167,14 @@ class LocationPicker {
 
     this.geocoder = new google.maps.Geocoder();
 
-    // Initialize search box
     const searchInput = document.getElementById(`map-search-input-${this.productId}`);
     if (searchInput) {
       this.searchBox = new google.maps.places.SearchBox(searchInput);
 
-      // Bias search results to map viewport
       this.map.addListener('bounds_changed', () => {
         this.searchBox.setBounds(this.map.getBounds());
       });
 
-      // Listen for search results
       this.searchBox.addListener('places_changed', () => {
         const places = this.searchBox.getPlaces();
         if (places.length === 0) return;
@@ -142,19 +193,16 @@ class LocationPicker {
       });
     }
 
-    // Click to set marker
     this.map.addListener('click', (e) => {
       this.geocodeLocation(e.latLng.lat(), e.latLng.lng());
     });
   }
 
   setLocation(lat, lng, address) {
-    // Remove existing marker
     if (this.marker) {
       this.marker.setMap(null);
     }
 
-    // Add new marker
     this.marker = new google.maps.Marker({
       position: { lat, lng },
       map: this.map,
@@ -170,20 +218,17 @@ class LocationPicker {
       }
     });
 
-    // Handle marker drag
     this.marker.addListener('dragend', (e) => {
       this.geocodeLocation(e.latLng.lat(), e.latLng.lng());
     });
 
     this.selectedLocation = { lat, lng, address };
 
-    // Update display
     const addressDisplay = document.getElementById(`selected-address-${this.productId}`);
     if (addressDisplay) {
       addressDisplay.textContent = address;
     }
 
-    // Enable confirm button
     const confirmBtn = document.getElementById(`confirm-location-${this.productId}`);
     if (confirmBtn) {
       confirmBtn.disabled = false;
@@ -208,7 +253,6 @@ class LocationPicker {
       return;
     }
 
-    // Set form fields
     const displayInput = document.getElementById(`pickup-location-display-${this.productId}`);
     const latInput = document.getElementById(`pickup-latitude-${this.productId}`);
     const lngInput = document.getElementById(`pickup-longitude-${this.productId}`);
