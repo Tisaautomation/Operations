@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Dome Shop - Configurador 3D</title>
+    <meta name="description" content="Configura tu domo geodésico V3 en 3D. Elige tamaño, color, accesorios y visualiza el resultado en tiempo real.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/configurator.css">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <h2>The Dome Shop</h2>
+            <p>Cargando configurador 3D...</p>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="app-layout">
+        <!-- 3D Viewport -->
+        <div class="viewport-container">
+            <canvas id="dome-canvas"></canvas>
+
+            <!-- Viewport overlay info -->
+            <div class="viewport-badge">
+                <span class="badge-text">V3 Geodesic Dome</span>
+            </div>
+        </div>
+
+        <!-- Configuration Panel -->
+        <aside id="config-panel" class="config-panel">
+            <!-- Content injected by UIController.js -->
+        </aside>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
