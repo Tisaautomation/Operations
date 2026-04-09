@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmed - Payment Required</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0;">✅ Booking Confirmed!</h1>
+        <p style="color: #f0f0f0; margin: 10px 0 0 0; font-size: 18px;">Please complete your payment</p>
+    </div>
+
+    <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
+        <p style="font-size: 18px;"><strong>Dear {{customerName}},</strong></p>
+
+        <p>Great news! Your tour has been confirmed! 🎉</p>
+
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #11998e;">
+            <h3 style="color: #11998e; margin-top: 0;">📋 Your Tour Details:</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Tour:</td>
+                    <td style="padding: 8px 0;">{{tourName}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Date:</td>
+                    <td style="padding: 8px 0;">{{tourDate}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Pickup Time:</td>
+                    <td style="padding: 8px 0;"><strong style="color: #11998e; font-size: 16px;">{{pickupTime}}</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Pickup Location:</td>
+                    <td style="padding: 8px 0;">{{pickupLocation}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Participants:</td>
+                    <td style="padding: 8px 0;">{{numberOfPeople}} people</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Booking ID:</td>
+                    <td style="padding: 8px 0;"><strong>{{bookingId}}</strong></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Your WhatsApp:</td>
+                    <td style="padding: 8px 0;">{{customerWhatsApp}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="background: #fff9e6; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>📍 Pickup Location on Map:</strong></p>
+            <p style="margin: 10px 0 0 0;">{{pickupLocation}}</p>
+            {{#if pickupMapUrl}}
+            <a href="{{pickupMapUrl}}" style="color: #11998e; text-decoration: none; font-weight: bold;">📱 View on Google Maps →</a>
+            {{/if}}
+        </div>
+
+        <!-- PAYMENT SECTION -->
+        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 25px; border-radius: 8px; margin: 30px 0; text-align: center;">
+            <h2 style="color: white; margin-top: 0;">💳 Payment Required</h2>
+            <p style="color: white; font-size: 24px; font-weight: bold; margin: 10px 0;">{{currency}} {{totalAmount}}</p>
+            <p style="color: #f0f0f0; margin: 0;">Choose your preferred payment method below</p>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #2e7d32; margin-top: 0;">💰 Payment Options</h3>
+
+            <!-- Cash on Tour -->
+            <div style="background: white; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #4caf50;">
+                <h4 style="margin: 0 0 10px 0; color: #2e7d32;">1️⃣ Cash on Tour (COT)</h4>
+                <p style="margin: 5px 0; color: #666;">Pay cash directly to your driver at tour start</p>
+                <p style="margin: 10px 0; padding: 10px; background: #e8f5e9; border-radius: 3px;">
+                    <strong>✓ No payment needed now</strong><br>
+                    <strong>✓ Just bring cash on tour day</strong><br>
+                    <small>💡 Please have exact change: {{currency}} {{totalAmount}}</small>
+                </p>
+            </div>
+
+            <!-- Thai Bank Transfer -->
+            <div style="background: white; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #2196F3;">
+                <h4 style="margin: 0 0 10px 0; color: #1976d2;">2️⃣ Thai Bank Transfer</h4>
+                <p style="margin: 5px 0; color: #666;">Transfer to our Thai bank account</p>
+                <div style="margin: 10px 0; padding: 10px; background: #e3f2fd; border-radius: 3px; font-family: monospace; font-size: 14px;">
+                    <strong>Bank:</strong> {{paymentLinks.thaiBank.instructions}}<br>
+                    <strong>Amount:</strong> {{currency}} {{totalAmount}}<br>
+                    <strong>Reference:</strong> {{bookingId}}
+                </div>
+                <p style="margin: 5px 0; font-size: 12px; color: #999;">After transfer, please send screenshot to {{businessEmail}}</p>
+            </div>
+
+            <!-- QR Code (PromptPay) -->
+            <div style="background: white; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #9c27b0;">
+                <h4 style="margin: 0 0 10px 0; color: #9c27b0;">3️⃣ QR Code Payment (PromptPay)</h4>
+                <p style="margin: 5px 0; color: #666;">Scan with your Thai banking app</p>
+                {{#if paymentLinks.qrCode.qrCodeUrl}}
+                <div style="text-align: center; margin: 15px 0;">
+                    <img src="{{paymentLinks.qrCode.qrCodeUrl}}" alt="PromptPay QR Code" style="width: 200px; height: 200px; border: 2px solid #9c27b0; border-radius: 8px;">
+                    <p style="margin: 10px 0; font-size: 14px;">Scan this QR code to pay {{currency}} {{totalAmount}}</p>
+                </div>
+                {{/if}}
+            </div>
+
+            <!-- PayPal -->
+            <div style="background: white; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #0070ba;">
+                <h4 style="margin: 0 0 10px 0; color: #0070ba;">4️⃣ PayPal</h4>
+                <p style="margin: 5px 0; color: #666;">Pay securely with PayPal or credit card</p>
+                {{#if paymentLinks.paypal.link}}
+                <a href="{{paymentLinks.paypal.link}}" style="display: inline-block; background: #0070ba; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 10px;">Pay with PayPal →</a>
+                {{/if}}
+            </div>
+
+            <!-- Credit/Debit Card (Stripe) -->
+            <div style="background: white; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #635bff;">
+                <h4 style="margin: 0 0 10px 0; color: #635bff;">5️⃣ Credit/Debit Card (Stripe)</h4>
+                <p style="margin: 5px 0; color: #666;">Secure payment with any major card</p>
+                {{#if paymentLinks.stripe.link}}
+                <a href="{{paymentLinks.stripe.link}}" style="display: inline-block; background: #635bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 10px;">Pay by Card →</a>
+                {{/if}}
+                <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">💳 Visa, Mastercard, Amex accepted</p>
+            </div>
+
+            <!-- Wise (TransferWise) -->
+            <div style="background: white; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #37517e;">
+                <h4 style="margin: 0 0 10px 0; color: #37517e;">6️⃣ Wise (TransferWise)</h4>
+                <p style="margin: 5px 0; color: #666;">International transfer with low fees</p>
+                <div style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 3px; font-size: 14px;">
+                    {{paymentLinks.wise.instructions}}
+                </div>
+            </div>
+
+            <!-- Revolut -->
+            <div style="background: white; padding: 15px; margin: 15px 0; border-radius: 5px; border-left: 4px solid #0075eb;">
+                <h4 style="margin: 0 0 10px 0; color: #0075eb;">7️⃣ Revolut</h4>
+                <p style="margin: 5px 0; color: #666;">Fast payment via Revolut</p>
+                {{#if paymentLinks.revolut.link}}
+                <a href="{{paymentLinks.revolut.link}}" style="display: inline-block; background: #0075eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 10px;">Pay with Revolut →</a>
+                {{/if}}
+                <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">Add reference: {{bookingId}}</p>
+            </div>
+        </div>
+
+        <div style="background: #ffebee; border-left: 4px solid #f44336; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>⚠️ Important Payment Information:</strong></p>
+            <ul style="margin: 10px 0;">
+                <li>Payment must be completed <strong>before tour date</strong></li>
+                <li>If paying by bank transfer/QR code, send screenshot to: {{businessEmail}}</li>
+                <li>For Cash on Tour: Please bring exact change</li>
+                <li>After payment, you'll receive a payment confirmation email</li>
+            </ul>
+        </div>
+
+        <div style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>📅 What Happens Next:</strong></p>
+            <ul style="margin: 10px 0;">
+                <li><strong>Day Before Tour:</strong> You'll receive your tour voucher via email</li>
+                <li><strong>30 Minutes Before:</strong> Driver will contact you on WhatsApp: {{customerWhatsApp}}</li>
+                <li><strong>Pickup Time:</strong> Be ready at {{pickupLocation}} at {{pickupTime}}</li>
+            </ul>
+        </div>
+
+        <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>📱 Driver Contact:</strong></p>
+            <ul style="margin: 10px 0;">
+                <li>Driver will message you on WhatsApp: <strong>{{customerWhatsApp}}</strong></li>
+                <li>Make sure WhatsApp notifications are enabled</li>
+                <li>Driver will confirm arrival and pickup details</li>
+            </ul>
+        </div>
+
+        <div style="margin: 30px 0; text-align: center;">
+            <a href="{{websiteUrl}}/bookings/{{bookingId}}" style="display: inline-block; background: #11998e; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 5px;">View Booking</a>
+            <a href="{{websiteUrl}}/contact" style="display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 5px;">Contact Us</a>
+        </div>
+
+        <p style="text-align: center; color: #11998e; font-size: 18px; font-weight: bold;">See you soon! 🌟</p>
+
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+
+        <div style="text-align: center; color: #666; font-size: 14px;">
+            <p><strong>{{businessName}}</strong></p>
+            <p>📞 {{businessPhone}} | 📧 {{businessEmail}}</p>
+            <p>💬 WhatsApp: {{businessPhone}}</p>
+            <p>🌐 <a href="{{websiteUrl}}" style="color: #11998e; text-decoration: none;">{{websiteUrl}}</a></p>
+        </div>
+    </div>
+</body>
+</html>

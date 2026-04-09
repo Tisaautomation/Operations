@@ -1,0 +1,530 @@
+{
+  "name": "AI Chatbot Integration with Website Learning",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "chatbot",
+        "options": {
+          "responseMode": "lastNode"
+        }
+      },
+      "name": "Chatbot Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "ai-chatbot-webhook",
+      "notes": "Receives customer messages from website chat widget"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse incoming chat message\nconst data = items[0].json;\n\nconst message = {\n  sessionId: data.sessionId || `session_${Date.now()}`,\n  customerId: data.customerId || 'anonymous',\n  customerName: data.customerName || 'Guest',\n  customerEmail: data.customerEmail || '',\n  messageText: data.message || data.text || '',\n  timestamp: new Date().toISOString(),\n  context: data.context || {}\n};\n\nreturn [{ json: message }];"
+      },
+      "name": "Parse Customer Message",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "notes": "Extracts message details from webhook"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "ChatHistory!A:Z",
+        "options": {
+          "filter": "sessionId = '{{$json.sessionId}}'"
+        }
+      },
+      "name": "Load Chat History",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [650, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Retrieves previous messages in this conversation"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.BUSINESS_WEBSITE}}/sitemap.xml",
+        "options": {}
+      },
+      "name": "Fetch Website Sitemap",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [650, 450],
+      "notes": "Gets website structure for context awareness"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "KnowledgeBase!A:Z",
+        "options": {}
+      },
+      "name": "Load Knowledge Base",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [650, 600],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Loads FAQ and knowledge base from Google Sheets"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Build comprehensive context for AI\nconst currentMessage = items[0].json;\nconst chatHistory = $node['Load Chat History'].json || [];\nconst knowledgeBase = $node['Load Knowledge Base'].json || [];\n\n// Format chat history\nconst conversationHistory = chatHistory.slice(-10).map(msg => {\n  return `${msg.role}: ${msg.content}`;\n}).join('\\n');\n\n// Create context about business\nconst businessContext = `\nBusiness Name: ${process.env.BUSINESS_NAME}\nWebsite: ${process.env.BUSINESS_WEBSITE}\nPhone: ${process.env.BUSINESS_PHONE}\nEmail: ${process.env.BUSINESS_EMAIL}\n\nWe are a travel agency offering various tours and experiences.\n`;\n\n// Build knowledge base context\nconst knowledgeContext = knowledgeBase.map(kb => {\n  return `Q: ${kb.question}\\nA: ${kb.answer}`;\n}).join('\\n\\n');\n\nreturn [{\n  json: {\n    ...currentMessage,\n    conversationHistory: conversationHistory,\n    businessContext: businessContext,\n    knowledgeContext: knowledgeContext\n  }\n}];"
+      },
+      "name": "Build AI Context",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "notes": "Combines all context for AI model"
+    },
+    {
+      "parameters": {
+        "model": "gpt-4-turbo-preview",
+        "messages": [\n          {\n            "role": "system",\n            "content": "You are a professional travel agency assistant for {{$json.businessContext}}. Your role is to help customers with:\\n\\n1. Tour information and recommendations\\n2. Booking assistance and questions\\n3. Pricing and availability\\n4. Travel tips and advice\\n5. General customer service\\n\\nKnowledge Base:\\n{{$json.knowledgeContext}}\\n\\nGuidelines:\\n- Be warm, friendly, and professional\\n- Provide accurate information based on the knowledge base\\n- If you don't know something, offer to connect them with a human agent\\n- Encourage bookings when appropriate\\n- Always maintain customer privacy and data security\\n- Use emojis sparingly for a friendly touch\\n\\nPrevious Conversation:\\n{{$json.conversationHistory}}"\n          },\n          {\n            "role": "user",\n            "content": "{{$json.messageText}}"\n          }\n        ],
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 500,
+          "topP": 1,
+          "frequencyPenalty": 0,
+          "presencePenalty": 0
+        }
+      },
+      "name": "OpenAI Chat Completion",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "8",
+          "name": "OpenAI API"
+        }
+      },
+      "notes": "Generates AI response using GPT-4"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract AI response and prepare for customer\nconst aiResponse = items[0].json.choices[0].message.content;\nconst currentMessage = $node['Build AI Context'].json;\n\n// Check if response indicates booking intent\nconst bookingIntent = aiResponse.toLowerCase().includes('book') || \n                     aiResponse.toLowerCase().includes('reservation') ||\n                     aiResponse.toLowerCase().includes('available');\n\n// Check if human handoff needed\nconst humanHandoff = aiResponse.toLowerCase().includes('transfer to agent') ||\n                    aiResponse.toLowerCase().includes('speak with someone');\n\nreturn [{\n  json: {\n    sessionId: currentMessage.sessionId,\n    customerId: currentMessage.customerId,\n    customerName: currentMessage.customerName,\n    customerEmail: currentMessage.customerEmail,\n    customerMessage: currentMessage.messageText,\n    aiResponse: aiResponse,\n    bookingIntent: bookingIntent,\n    humanHandoff: humanHandoff,\n    timestamp: new Date().toISOString(),\n    sentiment: 'neutral' // Could add sentiment analysis here\n  }\n}];"
+      },
+      "name": "Process AI Response",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "notes": "Analyzes AI response for intent and actions"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "ChatHistory!A:Z",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        }
+      },
+      "name": "Save Customer Message to History",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [1450, 200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Logs customer message"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "ChatHistory!A:Z",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        }
+      },
+      "name": "Save AI Response to History",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [1450, 350],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Logs AI response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.bookingIntent}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Booking Intent Detected?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1450, 500],
+      "notes": "Checks if customer wants to book"
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "upsert",
+        "email": "={{$json.customerEmail}}",
+        "firstName": "={{$json.customerName.split(' ')[0]}}",
+        "lastName": "={{$json.customerName.split(' ').slice(1).join(' ')}}",
+        "additionalFields": {
+          "customFields": {
+            "Last_Chat_Date": "={{$json.timestamp}}",
+            "Booking_Intent": "={{$json.bookingIntent ? 'Yes' : 'No'}}",
+            "Lead_Source": "Website Chatbot"\n          }
+        }
+      },
+      "name": "Create Lead in Zoho CRM",
+      "type": "n8n-nodes-base.zohoCrm",
+      "typeVersion": 1,
+      "position": [1650, 500],
+      "credentials": {
+        "zohoCrmOAuth2Api": {
+          "id": "4",
+          "name": "Zoho CRM OAuth2"
+        }
+      },
+      "notes": "Creates/updates lead when booking intent detected"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.humanHandoff}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Human Handoff Needed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1450, 650],
+      "notes": "Checks if human agent needed"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$env.SUPPORT_EMAIL}}",
+        "subject": "🤖 Chatbot Handoff Request - {{$json.customerName}}",
+        "emailType": "html",
+        "html": "<h3>Customer Requesting Human Agent</h3><p><strong>Customer:</strong> {{$json.customerName}} ({{$json.customerEmail}})</p><p><strong>Session ID:</strong> {{$json.sessionId}}</p><p><strong>Last Message:</strong> {{$json.customerMessage}}</p><p><strong>AI Response:</strong> {{$json.aiResponse}}</p><p><a href='{{$env.BUSINESS_WEBSITE}}/admin/chat/{{$json.sessionId}}'>View Full Conversation</a></p>",
+        "options": {}
+      },
+      "name": "Alert Support Team",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1650, 650],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Alerts human agents when handoff requested"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\"success\": true, \"response\": \"{{$json.aiResponse}}\", \"sessionId\": \"{{$json.sessionId}}\", \"bookingIntent\": {{$json.bookingIntent}}, \"humanHandoff\": {{$json.humanHandoff}}}",
+        "options": {}
+      },
+      "name": "Return Response to Website",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1650, 300],
+      "notes": "Sends AI response back to chat widget"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Daily Learning Trigger - 2:00 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 800],
+      "notes": "Runs daily to improve chatbot from conversations"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "ChatHistory!A:Z",
+        "options": {}
+      },
+      "name": "Fetch All Chat History",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [450, 800],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Retrieves all chat conversations"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Analyze chat history to find common questions and patterns\nconst allChats = items.map(item => item.json);\n\n// Group by similar questions (simplified - in production use embeddings)\nconst questions = {};\n\nallChats.forEach(chat => {\n  if (chat.role === 'user') {\n    const normalized = chat.content.toLowerCase().trim();\n    if (questions[normalized]) {\n      questions[normalized].count++;\n    } else {\n      questions[normalized] = {\n        question: chat.content,\n        count: 1,\n        responses: []\n      };\n    }\n  }\n});\n\n// Find questions asked more than 3 times (frequently asked)\nconst frequentQuestions = Object.values(questions)\n  .filter(q => q.count >= 3)\n  .sort((a, b) => b.count - a.count)\n  .slice(0, 20);\n\nreturn [{\n  json: {\n    totalConversations: allChats.length,\n    frequentQuestions: frequentQuestions,\n    analyzedAt: new Date().toISOString()\n  }\n}];"
+      },
+      "name": "Analyze Conversation Patterns",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 800],
+      "notes": "Identifies common questions for knowledge base improvement"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "ChatbotLearning!A:Z",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        }
+      },
+      "name": "Update Knowledge Base with Learnings",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [850, 800],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Adds new patterns to knowledge base"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$env.BUSINESS_EMAIL}}",
+        "subject": "🤖 Daily Chatbot Learning Report",
+        "emailType": "html",
+        "html": "<h2>Chatbot Learning Summary</h2><p><strong>Total Conversations Analyzed:</strong> {{$json.totalConversations}}</p><h3>Top Frequent Questions:</h3><ol>{{#each frequentQuestions}}<li>{{this.question}} (Asked {{this.count}} times)</li>{{/each}}</ol><p>These questions have been added to the knowledge base for improved responses.</p><p><small>Report generated: {{$json.analyzedAt}}</small></p>",
+        "options": {}
+      },
+      "name": "Send Learning Report to Admin",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 800],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Sends daily improvement report"
+    }
+  ],
+  "connections": {
+    "Chatbot Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Customer Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Customer Message": {
+      "main": [
+        [
+          {
+            "node": "Load Chat History",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Website Sitemap",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Load Knowledge Base",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Chat History": {
+      "main": [
+        [
+          {
+            "node": "Build AI Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build AI Context": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Chat Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Completion": {
+      "main": [
+        [
+          {
+            "node": "Process AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process AI Response": {
+      "main": [
+        [
+          {
+            "node": "Save Customer Message to History",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save AI Response to History",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Booking Intent Detected?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Human Handoff Needed?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Return Response to Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Booking Intent Detected?": {
+      "main": [
+        [
+          {
+            "node": "Create Lead in Zoho CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Human Handoff Needed?": {
+      "main": [
+        [
+          {
+            "node": "Alert Support Team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Learning Trigger - 2:00 AM": {
+      "main": [
+        [
+          {
+            "node": "Fetch All Chat History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch All Chat History": {
+      "main": [
+        [
+          {
+            "node": "Analyze Conversation Patterns",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Conversation Patterns": {
+      "main": [
+        [
+          {
+            "node": "Update Knowledge Base with Learnings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Knowledge Base with Learnings": {
+      "main": [
+        [
+          {
+            "node": "Send Learning Report to Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 3600,
+    "timezone": "America/New_York"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

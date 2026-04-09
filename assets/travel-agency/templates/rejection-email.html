@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alternative Tour Options</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0;">{{businessName}}</h1>
+        <p style="color: #f0f0f0; margin: 10px 0 0 0;">Let's Find You the Perfect Adventure!</p>
+    </div>
+
+    <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
+        <p style="font-size: 18px;"><strong>Dear {{customerName}},</strong></p>
+
+        <p>Thank you for your interest in our tours! Unfortunately, the tour you requested is fully booked for your selected date.</p>
+
+        <div style="background: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Your Original Request:</strong></p>
+            <table style="width: 100%; margin-top: 10px;">
+                <tr>
+                    <td style="padding: 5px 0; font-weight: bold;">Tour:</td>
+                    <td style="padding: 5px 0;">{{tourName}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px 0; font-weight: bold;">Date:</td>
+                    <td style="padding: 5px 0;">{{tourDate}}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px 0; font-weight: bold;">Participants:</td>
+                    <td style="padding: 5px 0;">{{numberOfPeople}} people</td>
+                </tr>
+            </table>
+        </div>
+
+        <p><strong>But don't worry!</strong> We have some fantastic alternatives for you:</p>
+
+        <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #4caf50; margin-top: 0;">🗓️ Alternative Dates for {{tourName}}:</h3>
+            <ul style="line-height: 2;">
+                {{#each alternativeDates}}
+                <li><strong>{{this}}</strong> - <a href="{{../websiteUrl}}/book?tour={{../tourId}}&date={{this}}" style="color: #4caf50; text-decoration: none; font-weight: bold;">Book Now →</a></li>
+                {{/each}}
+            </ul>
+        </div>
+
+        <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #2196F3; margin-top: 0;">🌟 Similar Tours You Might Love:</h3>
+            {{#each alternativeTours}}
+            <div style="background: white; padding: 15px; margin: 10px 0; border-radius: 5px; border: 1px solid #e0e0e0;">
+                <h4 style="margin: 0 0 10px 0; color: #2196F3;">{{this.name}}</h4>
+                <p style="margin: 5px 0; color: #666;">{{this.description}}</p>
+                <p style="margin: 5px 0;"><strong>Duration:</strong> {{this.duration}} | <strong>Price:</strong> {{../currency}}{{this.price}}</p>
+                <p style="margin: 5px 0;"><strong>Available:</strong> {{this.availableDates}}</p>
+                <a href="{{../websiteUrl}}/tours/{{this.id}}" style="display: inline-block; background: #2196F3; color: white; padding: 8px 20px; text-decoration: none; border-radius: 5px; font-size: 14px; margin-top: 10px;">View Details →</a>
+            </div>
+            {{/each}}
+        </div>
+
+        <div style="background: #f3e5f5; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+            <h3 style="color: #9c27b0; margin-top: 0;">💬 Need Help Choosing?</h3>
+            <p>Our travel experts are here to help you find the perfect tour!</p>
+            <p style="margin: 15px 0;">
+                <strong>📞 Call us:</strong> {{businessPhone}}<br>
+                <strong>📧 Email us:</strong> {{businessEmail}}
+            </p>
+            <p><strong>Or chat with our AI assistant on our website for instant recommendations!</strong></p>
+        </div>
+
+        <div style="margin: 30px 0; text-align: center;">
+            <a href="{{websiteUrl}}/tours" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">Browse All Tours</a>
+        </div>
+
+        <div style="background: #e7f3ff; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>🎁 Special Offer:</strong></p>
+            <p style="margin: 10px 0 0 0;">Book any alternative tour within 48 hours and get 10% off with code: <strong style="color: #2196F3;">ALTERNATIVE10</strong></p>
+        </div>
+
+        <p>We truly appreciate your interest and hope to serve you soon with an amazing tour experience!</p>
+
+        <p style="margin-top: 30px;">Warm regards,<br>
+        <strong>The {{businessName}} Team</strong></p>
+
+        <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
+
+        <div style="text-align: center; color: #666; font-size: 14px;">
+            <p><strong>{{businessName}}</strong></p>
+            <p>📞 {{businessPhone}} | 📧 {{businessEmail}}</p>
+            <p>🌐 <a href="{{websiteUrl}}" style="color: #667eea; text-decoration: none;">{{websiteUrl}}</a></p>
+            <p style="margin-top: 15px; font-size: 12px;">
+                <a href="{{websiteUrl}}/unsubscribe?email={{customerEmail}}" style="color: #999; text-decoration: none;">Unsubscribe</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

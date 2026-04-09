@@ -1,0 +1,249 @@
+{
+  "name": "Daily Morning Provider Reports",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger - 6:00 AM Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notes": "Triggers every day at 6:00 AM to send provider schedules"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "options": {}
+      },
+      "name": "Fetch Today's Bookings from Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [450, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Retrieves all bookings for today from Google Sheets"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Filter bookings for today and group by provider\nconst today = new Date();\ntoday.setHours(0, 0, 0, 0);\n\nconst allBookings = items.map(item => item.json);\n\n// Filter for today's confirmed bookings\nconst todayBookings = allBookings.filter(booking => {\n  const bookingDate = new Date(booking.tourDate);\n  bookingDate.setHours(0, 0, 0, 0);\n  return bookingDate.getTime() === today.getTime() && \n         booking.status === 'confirmed';\n});\n\n// Group by provider\nconst providerBookings = {};\n\ntodayBookings.forEach(booking => {\n  const providerId = booking.providerId || booking.providerName;\n  \n  if (!providerBookings[providerId]) {\n    providerBookings[providerId] = {\n      providerId: providerId,\n      providerName: booking.providerName,\n      providerEmail: booking.providerEmail,\n      bookings: [],\n      totalCustomers: 0,\n      tours: {}\n    };\n  }\n  \n  providerBookings[providerId].bookings.push(booking);\n  providerBookings[providerId].totalCustomers += parseInt(booking.numberOfPeople) || 1;\n  \n  // Count by tour\n  const tourName = booking.tourName;\n  if (!providerBookings[providerId].tours[tourName]) {\n    providerBookings[providerId].tours[tourName] = {\n      tourName: tourName,\n      bookingCount: 0,\n      totalGuests: 0\n    };\n  }\n  providerBookings[providerId].tours[tourName].bookingCount++;\n  providerBookings[providerId].tours[tourName].totalGuests += parseInt(booking.numberOfPeople) || 1;\n});\n\n// Convert to array and add summary\nconst results = Object.values(providerBookings).map(provider => {\n  return {\n    ...provider,\n    tourSummary: Object.values(provider.tours),\n    hasBookings: provider.bookings.length > 0,\n    date: today.toLocaleDateString('en-US', { \n      weekday: 'long', \n      year: 'numeric', \n      month: 'long', \n      day: 'numeric' \n    }),\n    reportGeneratedTime: new Date().toLocaleString()\n  };\n});\n\nreturn results.map(r => ({ json: r }));"
+      },
+      "name": "Group Bookings by Provider",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "notes": "Organizes today's bookings by provider and calculates summaries"
+    },
+    {
+      "parameters": {
+        "mode": "loadTemplate",
+        "templateFile": "/data/templates/provider-morning-report.html",
+        "dataPropertyName": "json"
+      },
+      "name": "Load Morning Report Template",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "notes": "Loads and populates morning report email template for each provider"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$json.providerEmail}}",
+        "subject": "Daily Schedule - {{$json.date}} - {{$json.totalCustomers}} Customers",
+        "emailType": "html",
+        "html": "={{$binary.morningReport.data}}",
+        "options": {
+          "ccEmail": "={{$env.BUSINESS_EMAIL}}",
+          "attachments": []
+        }
+      },
+      "name": "Send Morning Report to Each Provider",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 300],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Emails daily schedule to each provider"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{$json.providerLineId}}",
+        "message": "🌅 Good Morning {{$json.providerName}}!\\n\\n📅 Today's Schedule: {{$json.date}}\\n👥 Total Customers: {{$json.totalCustomers}}\\n🎫 Total Bookings: {{$json.bookings.length}}\\n\\nDetailed schedule sent to your email.\\n\\nHave a great day! 🌟",
+        "additionalFields": {}
+      },
+      "name": "Send LINE Summary to Provider",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [1050, 450],
+      "credentials": {
+        "lineNotifyOAuth2Api": {
+          "id": "1",
+          "name": "LINE Messaging API"
+        }
+      },
+      "notes": "Sends quick summary via LINE"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "DailyReports!A:Z",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        }
+      },
+      "name": "Log Report Sent to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [1050, 600],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Logs that morning report was sent"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Prepare admin summary of all providers\nconst allProviders = items.map(item => item.json);\n\nconst totalBookings = allProviders.reduce((sum, p) => sum + p.bookings.length, 0);\nconst totalCustomers = allProviders.reduce((sum, p) => sum + p.totalCustomers, 0);\n\nconst summary = {\n  date: allProviders[0]?.date || new Date().toLocaleDateString(),\n  totalProviders: allProviders.length,\n  totalBookings: totalBookings,\n  totalCustomers: totalCustomers,\n  providers: allProviders.map(p => ({\n    name: p.providerName,\n    bookings: p.bookings.length,\n    customers: p.totalCustomers\n  })),\n  reportGeneratedTime: new Date().toLocaleString()\n};\n\nreturn [{ json: summary }];"
+      },
+      "name": "Create Admin Summary",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 600],
+      "notes": "Creates summary for business owner"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$env.BUSINESS_EMAIL}}",
+        "subject": "📊 Morning Summary - {{$json.date}} - {{$json.totalBookings}} Tours Today",
+        "emailType": "html",
+        "html": "<h2>Daily Morning Summary</h2><p><strong>Date:</strong> {{$json.date}}</p><p><strong>Total Providers:</strong> {{$json.totalProviders}}</p><p><strong>Total Bookings:</strong> {{$json.totalBookings}}</p><p><strong>Total Customers:</strong> {{$json.totalCustomers}}</p><h3>Provider Breakdown:</h3><ul>{{#each providers}}<li><strong>{{this.name}}:</strong> {{this.bookings}} bookings, {{this.customers}} customers</li>{{/each}}</ul><p><small>Report generated: {{$json.reportGeneratedTime}}</small></p>",
+        "options": {}
+      },
+      "name": "Send Admin Summary Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1250, 600],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Sends summary to business owner"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - 6:00 AM Daily": {
+      "main": [
+        [
+          {
+            "node": "Fetch Today's Bookings from Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Today's Bookings from Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Group Bookings by Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Group Bookings by Provider": {
+      "main": [
+        [
+          {
+            "node": "Load Morning Report Template",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Admin Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Morning Report Template": {
+      "main": [
+        [
+          {
+            "node": "Send Morning Report to Each Provider",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send LINE Summary to Provider",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Report Sent to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Admin Summary": {
+      "main": [
+        [
+          {
+            "node": "Send Admin Summary Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 3600,
+    "timezone": "America/New_York"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}

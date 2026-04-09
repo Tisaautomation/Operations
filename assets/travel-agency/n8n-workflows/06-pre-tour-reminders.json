@@ -1,0 +1,304 @@
+{
+  "name": "Pre-Tour Reminder Calls (30 Minutes Before)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/15 * * * *"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger - Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notes": "Checks every 15 minutes for tours starting in 30 minutes"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "options": {}
+      },
+      "name": "Fetch Today's Confirmed Bookings",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [450, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Retrieves all confirmed bookings for today"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Find tours starting in approximately 30 minutes\nconst now = new Date();\nconst today = new Date(now.getFullYear(), now.getMonth(), now.getDate());\n\nconst allBookings = items.map(item => item.json);\n\n// Filter for today's confirmed bookings that need reminders\nconst upcomingTours = allBookings.filter(booking => {\n  const bookingDate = new Date(booking.tourDate);\n  bookingDate.setHours(0, 0, 0, 0);\n  \n  // Check if booking is for today and confirmed\n  if (bookingDate.getTime() !== today.getTime() || booking.status !== 'confirmed') {\n    return false;\n  }\n  \n  // Check if reminder already sent\n  if (booking.reminderSent === 'true' || booking.reminderSent === true) {\n    return false;\n  }\n  \n  // Parse pickup time (assumes format like \"09:00 AM\" or \"14:30\")\n  const pickupTime = booking.pickupTime;\n  if (!pickupTime) return false;\n  \n  // Convert pickup time to Date object\n  const timeMatch = pickupTime.match(/(\\d{1,2}):(\\d{2})\\s?(AM|PM)?/i);\n  if (!timeMatch) return false;\n  \n  let hours = parseInt(timeMatch[1]);\n  const minutes = parseInt(timeMatch[2]);\n  const meridiem = timeMatch[3];\n  \n  if (meridiem) {\n    if (meridiem.toUpperCase() === 'PM' && hours !== 12) {\n      hours += 12;\n    } else if (meridiem.toUpperCase() === 'AM' && hours === 12) {\n      hours = 0;\n    }\n  }\n  \n  const pickupDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);\n  \n  // Calculate time difference in minutes\n  const timeDiff = (pickupDateTime - now) / (1000 * 60);\n  \n  // Send reminder if tour is between 25-35 minutes away\n  return timeDiff >= 25 && timeDiff <= 35;\n});\n\nreturn upcomingTours.map(tour => ({ json: tour }));"
+      },
+      "name": "Filter Tours Starting in 30 Minutes",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [650, 300],
+      "notes": "Identifies tours that need reminder calls (30 min before)"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json.length}}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "name": "Any Tours to Remind?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "notes": "Checks if there are any tours needing reminders"
+    },
+    {
+      "parameters": {
+        "resource": "call",
+        "operation": "make",
+        "to": "={{$json.customerPhone}}",
+        "from": "={{$env.BUSINESS_PHONE}}",
+        "message": "Hello {{$json.customerName}}, this is {{$env.BUSINESS_NAME}} calling to remind you about your {{$json.tourName}} tour today. Your pickup is scheduled in 30 minutes at {{$json.pickupTime}} at {{$json.pickupLocation}}. Please be ready at the pickup location. If you have any questions, please call us back. Thank you and enjoy your tour!",
+        "additionalFields": {
+          "method": "tts"
+        }
+      },
+      "name": "Make Reminder Call via Twilio",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1050, 250],
+      "credentials": {
+        "twilioApi": {
+          "id": "6",
+          "name": "Twilio API"
+        }
+      },
+      "notes": "Makes automated reminder call to customer"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{$json.customerPhone}}",
+        "from": "={{$env.BUSINESS_PHONE}}",
+        "message": "🚗 Tour Reminder!\\n\\nHello {{$json.customerName}},\\n\\nYour {{$json.tourName}} tour starts in 30 minutes!\\n\\n⏰ Pickup Time: {{$json.pickupTime}}\\n📍 Location: {{$json.pickupLocation}}\\n\\nPlease be ready at the pickup location.\\n\\nHave a wonderful tour! 🌟\\n\\n{{$env.BUSINESS_NAME}}\\n{{$env.BUSINESS_PHONE}}",
+        "additionalFields": {}
+      },
+      "name": "Send SMS Reminder via Twilio",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1050, 400],
+      "credentials": {
+        "twilioApi": {
+          "id": "6",
+          "name": "Twilio API"
+        }
+      },
+      "notes": "Sends SMS reminder as backup"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "authentication": "smtp",
+        "fromEmail": "={{$env.ZOHO_MAIL_USER}}",
+        "toEmail": "={{$json.customerEmail}}",
+        "subject": "🚗 Tour Starting Soon - {{$json.tourName}}",
+        "emailType": "html",
+        "html": "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'><div style='background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 30px; text-align: center; border-radius: 10px; color: white;'><h1 style='margin: 0;'>🚗 Your Tour Starts in 30 Minutes!</h1></div><div style='padding: 30px; background: #ffffff; border: 1px solid #e0e0e0; border-radius: 0 0 10px 10px;'><p style='font-size: 18px;'><strong>Hello {{$json.customerName}},</strong></p><p>Get ready! Your amazing tour is about to begin!</p><div style='background: #fff9e6; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;'><h3 style='margin-top: 0; color: #f57c00;'>📋 Tour Details:</h3><table style='width: 100%;'><tr><td style='padding: 8px 0; font-weight: bold;'>Tour:</td><td style='padding: 8px 0;'>{{$json.tourName}}</td></tr><tr><td style='padding: 8px 0; font-weight: bold;'>Pickup Time:</td><td style='padding: 8px 0; font-size: 18px; font-weight: bold; color: #d32f2f;'>{{$json.pickupTime}}</td></tr><tr><td style='padding: 8px 0; font-weight: bold;'>Pickup Location:</td><td style='padding: 8px 0;'>{{$json.pickupLocation}}</td></tr><tr><td style='padding: 8px 0; font-weight: bold;'>Booking ID:</td><td style='padding: 8px 0;'>{{$json.bookingId}}</td></tr></table></div><div style='background: #ffebee; padding: 15px; border-radius: 8px; margin: 20px 0;'><p style='margin: 0; color: #c62828;'><strong>⚠️ Important:</strong> Please be at the pickup location on time. Your tour guide will be there shortly!</p></div><p style='text-align: center; margin: 30px 0;'><strong>Have an amazing time! 🌟</strong></p><hr style='border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;'><div style='text-align: center; color: #666; font-size: 14px;'><p><strong>{{$env.BUSINESS_NAME}}</strong></p><p>📞 {{$env.BUSINESS_PHONE}} | 📧 {{$env.BUSINESS_EMAIL}}</p></div></div></div>",
+        "options": {}
+      },
+      "name": "Send Email Reminder",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 550],
+      "credentials": {
+        "smtp": {
+          "id": "2",
+          "name": "Zoho Mail SMTP"
+        }
+      },
+      "notes": "Sends email reminder"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "Bookings!A:Z",
+        "values": {
+          "reminderSent": "true",
+          "reminderSentAt": "={{new Date().toISOString()}}"
+        },
+        "options": {
+          "whereClause": "bookingId = '{{$json.bookingId}}'"
+        }
+      },
+      "name": "Mark Reminder as Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [1250, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Updates booking record to prevent duplicate reminders"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "={{$json.providerLineId}}",
+        "message": "⏰ REMINDER SENT\\n\\nBooking: {{$json.bookingId}}\\nCustomer: {{$json.customerName}}\\nTour: {{$json.tourName}}\\nPickup: {{$json.pickupTime}}\\n\\n30-minute reminder call/SMS/email sent to customer.",
+        "additionalFields": {}
+      },
+      "name": "Notify Provider via LINE",
+      "type": "n8n-nodes-base.line",
+      "typeVersion": 1,
+      "position": [1250, 550],
+      "credentials": {
+        "lineNotifyOAuth2Api": {
+          "id": "1",
+          "name": "LINE Messaging API"
+        }
+      },
+      "notes": "Notifies provider that reminder was sent"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "sheetId": "={{$env.GOOGLE_SPREADSHEET_ID}}",
+        "range": "ReminderLog!A:Z",
+        "options": {
+          "valueInputMode": "USER_ENTERED"
+        }
+      },
+      "name": "Log Reminder Activity",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [1450, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "3",
+          "name": "Google Sheets API"
+        }
+      },
+      "notes": "Logs reminder activity for tracking"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - Every 15 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Fetch Today's Confirmed Bookings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Today's Confirmed Bookings": {
+      "main": [
+        [
+          {
+            "node": "Filter Tours Starting in 30 Minutes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Tours Starting in 30 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Any Tours to Remind?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Tours to Remind?": {
+      "main": [
+        [
+          {
+            "node": "Make Reminder Call via Twilio",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send SMS Reminder via Twilio",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Email Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make Reminder Call via Twilio": {
+      "main": [
+        [
+          {
+            "node": "Mark Reminder as Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send SMS Reminder via Twilio": {
+      "main": [
+        [
+          {
+            "node": "Notify Provider via LINE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Reminder as Sent": {
+      "main": [
+        [
+          {
+            "node": "Log Reminder Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "executionTimeout": 3600,
+    "timezone": "America/New_York"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "1"
+}
