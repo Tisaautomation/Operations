@@ -1,0 +1,22 @@
+{
+  "_comment": "Project-level MCP server configuration for Claude Code. When a user opens this repo in Claude Code, Claude will prompt to enable these servers. Credentials are pulled from each user's local environment — never committed here.",
+
+  "mcpServers": {
+    "shopify-dev": {
+      "_purpose": "Official Shopify developer MCP — exposes Shopify theme Liquid docs, Admin/Storefront API schemas, and theme validation tools. No credentials required — it is read-only developer documentation.",
+      "command": "npx",
+      "args": ["-y", "@shopify/dev-mcp@latest"]
+    },
+
+    "shopify-admin": {
+      "_purpose": "Shopify Admin API access (read/write products, collections, themes). Requires SHOPIFY_STORE_DOMAIN and SHOPIFY_ADMIN_API_ACCESS_TOKEN in your local environment (.env). Install with: npm i -g @shopify/admin-api-mcp  OR  use the dev-mcp package if it includes admin tooling.",
+      "_status": "SCAFFOLD — user must install the server package and set env vars before enabling.",
+      "command": "npx",
+      "args": ["-y", "@shopify/admin-api-mcp@latest"],
+      "env": {
+        "SHOPIFY_STORE_DOMAIN": "${SHOPIFY_STORE_DOMAIN}",
+        "SHOPIFY_ADMIN_API_ACCESS_TOKEN": "${SHOPIFY_ADMIN_API_ACCESS_TOKEN}"
+      }
+    }
+  }
+}

@@ -38,3 +38,10 @@ Each agent runs in isolation - its context stays inside the subagent, not the ma
 Handovers and skills consume 60%+ of session context when read directly.
 Sub-agents read the heavy files in isolation and return only concise summaries.
 This keeps the main session clean with maximum capacity for actual work.
+
+## Related Files
+
+- **`access.md`** (in this same `.claude/` folder) — credentials, MCP servers, and "what to do when Claude says it can't find X". Read this if a task requires Shopify Admin API, the Shopify CLI, or any external service.
+- **`../CLAUDE.md`** (repo root) — brand, design tokens, theme architecture, and coding conventions.
+- **`../.env.example`** — environment variable template.
+- **`../.mcp.json`** — project-level MCP server declarations.

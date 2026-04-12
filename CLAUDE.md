@@ -380,6 +380,16 @@ shopify theme check    # lint Liquid + theme quality
 - Claude MCP tools are scoped to this repo only.
 - Do NOT open PRs unless the user explicitly asks.
 
+## 14b. Access & Credentials — read this when something "can't be found"
+
+For any "I don't have access to X" situation, **check `.claude/access.md` before giving up.** It lists what's configured, what's missing, and exact steps to enable Shopify Admin API, CLI, and MCPs. Related files:
+
+- `.claude/access.md` — the full playbook (MCPs, tokens, auth flow)
+- `.claude/CLAUDE.md` — sub-agent auto-trigger rules
+- `.claude/agents/` — 4 specialized sub-agents (code-reviewer, debugger, session-explorer, test-writer)
+- `.env.example` — environment variable template
+- `.mcp.json` — project-level MCP server declarations
+
 ---
 
 ## 15. Where to Find Things — Quick Index
