@@ -88,12 +88,13 @@ Full detail in [`access.md`](access.md). Short version:
 
 | # | Rule | Enforced by |
 |---|---|---|
-| 1 | Never hardcode brand colors / fonts — use CSS variables | `../CLAUDE.md` §12 |
-| 2 | Never push to `main` without explicit approval | `../CLAUDE.md` §12 |
-| 3 | Never commit `.env`, tokens, or keys | `../.gitignore` |
-| 4 | Never give "I can't find X" without running the 6-step search | `access.md` §4 |
-| 5 | Never skip the session-explorer sub-agent on a greeting | `CLAUDE.md` (this folder) §1 |
-| 6 | Never modify Claude's global config (`~/.claude/settings.json`) | `access.md` §6 |
+| 1 | **🚨 Never change theme code based on linter/validator output alone — browser-test first. Production is at Lighthouse 97% and many "errors" are intentional optimizations.** | `../CLAUDE.md` §12c |
+| 2 | Never hardcode brand colors / fonts — use CSS variables | `../CLAUDE.md` §12 |
+| 3 | Never push to `main` without explicit approval | `../CLAUDE.md` §12 |
+| 4 | Never commit `.env`, tokens, or keys | `../.gitignore` |
+| 5 | Never give "I can't find X" without running the 6-step search | `access.md` §4 |
+| 6 | Never skip the session-explorer sub-agent on a greeting | `CLAUDE.md` (this folder) §1 |
+| 7 | Never modify Claude's global config (`~/.claude/settings.json`) | `access.md` §6 |
 
 ---
 

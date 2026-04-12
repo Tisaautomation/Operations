@@ -361,6 +361,20 @@ Both keys are empty by default in `settings_data.json` and must be configured in
 - Development happens on `claude/…` branches (current: `claude/mythos-claude-exploration-URYSR`).
 - Never push to `main` directly without explicit user approval.
 
+### 12c. 🚨 Browser-Testing Rule (NON-NEGOTIABLE)
+
+Production at [tourinkohsamui.com](https://tourinkohsamui.com) is at **Lighthouse mobile 97%** and the frontend works. That was achieved deliberately — many choices in this theme look "wrong" to static linters (Theme Check, validators) but exist for performance or because Horizon's parent theme provides the missing piece.
+
+**Therefore, before any theme code change:**
+
+1. **Do NOT trust static analysis alone.** Theme Check "ERROR" ≠ "bug". It means "this deviates from the default template".
+2. **Do NOT create files because a lint says they're missing.** They may live in Horizon's parent layer, be inlined elsewhere, or be provided by Shopify runtime.
+3. **Do NOT rename/refactor "for cleanliness"** without a browser verification that the rendered page is unchanged.
+4. **Always verify visually:** run `shopify theme dev` locally, or deploy to an unpublished theme with `shopify theme push --unpublished`, then load the page in a browser and compare before/after. If a browser-automation MCP becomes available (Playwright), use it to take before/after screenshots.
+5. **If unsure, ASK** the user before editing. The user explicitly said: *"no hacer ningún cambio sin haberlo testeado con un browser agent, porque por alguna razón lo pusimos así, no sé cuál"*.
+
+Violating this rule can regress a 97% Lighthouse score. The cost of a 5-minute browser test is tiny compared to breaking production.
+
 ---
 
 ## 13. Shopify CLI Commands
@@ -443,17 +457,25 @@ When you start a new session, before taking any design/code action:
 
 ### Theme Check findings (from `validate_theme` audit on 2026-04-12)
 
-Ran the official Shopify Dev MCP `validate_theme` tool. **7 of 14 files** passed cleanly. The remaining 7 have real issues to fix:
+> 🚨 **IMPORTANT CONTEXT — read before touching ANY of these:**
+>
+> Production is live at [tourinkohsamui.com](https://tourinkohsamui.com), **Lighthouse mobile = 97%**, frontend works correctly. The theme was built by prior Claude sessions with intentional optimizations. Theme Check flags deviations from the Horizon template — **it does NOT mean anything is broken**.
+>
+> The "missing snippets/sections" (header, footer, meta-tags, social-meta-tags, cart-drawer) are almost certainly **provided by the Horizon parent theme or inlined intentionally for performance** (fewer HTTP requests = part of how we hit 97%). Do not create those files on a hunch.
+>
+> **RULE: No theme file may be edited based on these findings without first verifying live behavior in a browser** (see §12c below). A "fix" that passes Theme Check but breaks production is a regression, not a fix.
 
-- [ ] **`layout/theme.liquid`** — (a) 4× "Asset should be served by the Shopify CDN" (local assets referenced via `asset_url` OK, but check for hardcoded URLs). (b) 2× replace `stylesheet_tag` / `script_tag` with `preload_tag` filter. (c) 1× inline script without `defer`/`async`. (d) Missing snippets: `snippets/meta-tags.liquid`, `snippets/social-meta-tags.liquid`, `snippets/cart-drawer.liquid`. (e) Missing sections: `sections/header.liquid`, `sections/footer.liquid`. (f) 2× deprecated `img_url` filter — replace with `image_url`.
-- [ ] **`sections/hero-banner.liquid`** — missing `width`/`height` on `<img>`; 4× deprecated `img_url` → `image_url`.
+Ran the official Shopify Dev MCP `validate_theme` tool. **7 of 14 files passed cleanly. 7 have deviations from the Horizon template** — documented here for future investigation, NOT for autoreplay:
+
+- [ ] **`layout/theme.liquid`** — 4× "Asset should be served by Shopify CDN", 2× `preload_tag` suggestion, 1× inline script without `defer`, missing snippet refs (`meta-tags`, `social-meta-tags`, `cart-drawer`), missing sections (`header`, `footer`), 2× deprecated `img_url`. **Do NOT create the missing files — Horizon likely provides them.**
+- [ ] **`sections/hero-banner.liquid`** — missing `width`/`height` on `<img>`; 4× `img_url` → `image_url`.
 - [ ] **`sections/product-carousel.liquid`** — missing `width`/`height` on `<img>`; 1× `img_url` → `image_url`.
-- [ ] **`snippets/product-booking-form.liquid`** — hardcoded `/cart/add` → replace with `{{ routes.cart_add_url }}`.
+- [ ] **`snippets/product-booking-form.liquid`** — hardcoded `/cart/add`. Probably intentional (maps to a custom form submit path). Verify in browser before touching.
 - [ ] **`snippets/product-schema.liquid`** — 2× `img_url` → `image_url`.
-- [ ] **`config/settings_schema.json`** — 2× "String is not a URI" (probably empty-string defaults on URL-type settings; either add a placeholder or change the setting type).
+- [ ] **`config/settings_schema.json`** — 2× "String is not a URI" (likely empty URL-type defaults).
 - [x] ~~`sections/main-product.liquid`, `sections/feature-slides.liquid`, `snippets/product-map.liquid`, `snippets/location-picker.liquid`, `config/settings_data.json`, `templates/{index,product,collection}.json`~~ ✅ All passed cleanly.
 
-> Priority order: fix missing snippets/sections FIRST (site may 404 on header/footer), then `img_url → image_url` (easy global find/replace), then routes, then CDN/preload tuning.
+> **When/if addressing these:** Start with the safest (deprecated `img_url` → `image_url` is a pure filter rename and Shopify guarantees backward compatibility). Leave all "missing file" and "hardcoded route" findings alone until browser-tested.
 
 ---
 

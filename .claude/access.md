@@ -43,12 +43,12 @@ Claude Code no es una cuenta con "permisos". Es una CLI que hereda el entorno de
 
 ### ❌ No configurado (cosas que hoy Claude NO puede hacer)
 
-| Capacidad | Qué haría falta |
-|---|---|
-| Editar productos / colecciones directamente desde la sesión | Shopify Admin API token en `.env` + MCP activo |
-| Deploy del theme desde Claude | Shopify CLI instalado + `shopify login` |
-| Navegador visual para ver cambios | Instalar `playwright` MCP o similar |
-| Acceder a Shopify Analytics | Shopify Admin API con scope `read_analytics` |
+| Capacidad | Qué haría falta | Prioridad |
+|---|---|---|
+| **Testear cambios en un navegador real (OBLIGATORIO antes de tocar el theme)** | Instalar Playwright MCP (`npx -y @executeautomation/playwright-mcp-server`) o similar. **Ver regla §12c en `../CLAUDE.md`.** | 🔥 **ALTA** — sin esto no se pueden aplicar cambios al theme con seguridad |
+| Editar productos / colecciones directamente desde la sesión | Shopify Admin API token en `.env` + MCP activo | Media |
+| Deploy del theme desde Claude | Shopify CLI instalado + `shopify login` | Media |
+| Acceder a Shopify Analytics | Shopify Admin API con scope `read_analytics` | Baja |
 
 ---
 
