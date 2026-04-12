@@ -99,30 +99,66 @@ CSS variables exposed: `--font-heading`, `--font-body`, `--font-subheading`.
 
 > ✅ **Local copies are now in `assets/`.** The canonical logo still lives in Shopify Files CDN (set via admin → `settings.logo` / `settings.favicon`), but local fallbacks are committed for design work, previews, and offline reference.
 
-### Local files (committed to this repo)
+### Complete asset set (committed to this repo)
 
-| File | Size | Purpose | Notes |
+**Master files** (downloaded from Shopify CDN or derived from them):
+
+| File | Size | Format | Purpose |
 |---|---|---|---|
-| `assets/logo.png` | 933×613 RGBA | Full color brand logo — "TIK" wordmark + compass + circular brush frame, turquoise→purple gradient | Use on light backgrounds. Reference: `{{ 'logo.png' \| asset_url }}` |
-| `assets/logo-white.png` | 933×613 RGBA | White silhouette of the logo (auto-derived from alpha of logo.png) | Placeholder for dark backgrounds (Purple scheme). **Auto-generated — replace with a hand-designed white version when possible.** |
-| `assets/favicon.png` | 512×512 RGBA | Circular dark favicon with TIK mark | Reference: `{{ 'favicon.png' \| asset_url }}` |
+| `assets/logo.svg` | 10 KB | SVG (vector, gradient fill) | **⭐ Primary logo — use this everywhere possible.** Infinite scale, brand gradient, 10 KB |
+| `assets/logo-white.svg` | 10 KB | SVG (vector, solid white) | Primary white/inverted logo for dark backgrounds (Purple scheme) |
+| `assets/logo-mono.svg` | 10 KB | SVG (vector, solid black) | Monochrome variant — print, stamps, single-color uses |
+| `assets/logo.png` | 933×613 | PNG RGBA | Raster master from Shopify CDN (original upload) |
+| `assets/logo@2x.png` | 1866×1226 | PNG RGBA | 2× retina PNG re-rendered from SVG for crispness |
+| `assets/logo-white.png` | 1866×1226 | PNG RGBA | Crisp white PNG re-rendered from SVG (replaced the earlier luminance-weighted version) |
 
-### Canonical source (Shopify CDN)
-Downloaded from tourinkohsamui.com's public CDN:
-- Logo: `https://cdn.shopify.com/s/files/1/0708/1164/8194/files/Purple_turquoise_3_af12013c-5f45-4a44-8d7f-fdafa45f02bb.png`
-- Favicon: `https://cdn.shopify.com/s/files/1/0708/1164/8194/files/TourInKohSamui-favicon.png`
+**Favicon set** (derived from the 512×512 master favicon):
 
-Shopify Files ID prefix for this store: `1/0708/1164/8194`.
+| File | Size | Purpose |
+|---|---|---|
+| `assets/favicon.ico` | 16+32+48 multi-res | Classic `<link rel="icon">` for legacy browsers |
+| `assets/favicon-16.png` | 16×16 | Modern browser tab |
+| `assets/favicon-32.png` | 32×32 | Modern browser tab (default) |
+| `assets/favicon-48.png` | 48×48 | Windows pinned site tile |
+| `assets/apple-touch-icon.png` | 180×180 | iOS home screen icon |
+| `assets/icon-192.png` | 192×192 | Android PWA / manifest |
+| `assets/icon-512.png` | 512×512 | PWA manifest (max size) |
+| `assets/favicon.png` | 512×512 | Original master from Shopify CDN |
+
+**Social / OG:**
+
+| File | Size | Purpose |
+|---|---|---|
+| `assets/og-image.png` | 1200×630 | Facebook / LinkedIn / WhatsApp / Twitter share card — brand gradient bg + centered white logo |
+
+### Canonical source URLs (Shopify CDN)
+- Logo master: `https://cdn.shopify.com/s/files/1/0708/1164/8194/files/Purple_turquoise_3_af12013c-5f45-4a44-8d7f-fdafa45f02bb.png`
+- Favicon master: `https://cdn.shopify.com/s/files/1/0708/1164/8194/files/TourInKohSamui-favicon.png`
+- Shopify Files ID prefix for this store: `1/0708/1164/8194`
+- **Note:** Shopify CDN won't serve these larger than their upload size (933×613 for logo, 512×512 for favicon). The SVGs above exceed that cap because they're vector.
+
+### How assets were built
+1. `logo.png` and `favicon.png` → `curl` from public Shopify CDN
+2. `logo.svg` → `potrace` vectorized silhouette + linear-gradient `<defs>` (turquoise→purple)
+3. `logo-white.svg`, `logo-mono.svg` → same silhouette with fill swapped
+4. `logo@2x.png`, `logo-white.png` → re-rendered from SVG via `cairosvg` at 1866 px wide
+5. Favicon variants → Pillow Lanczos downscale from 512×512 master
+6. `favicon.ico` → Pillow ICO export, multi-size
+7. `og-image.png` → Pillow gradient fill (`#00CED1 → #9370DB`) + centered white logo overlay
 
 ### Usage priority (in Liquid)
 1. **Prefer `settings.logo` / `settings.favicon`** — set via Shopify admin, editable by non-devs, already wired into `layout/theme.liquid:21, 185-186`.
-2. **Fallback to local `assets/logo.png`** if the admin setting is blank. Example:
+2. **Fallback to local SVG** if the admin setting is blank. Example:
    ```liquid
    {% if settings.logo %}
      <img src="{{ settings.logo | img_url: '200x' }}" alt="{{ shop.name }}">
    {% else %}
-     <img src="{{ 'logo.png' | asset_url }}" alt="{{ shop.name }}">
+     <img src="{{ 'logo.svg' | asset_url }}" alt="{{ shop.name }}" width="200">
    {% endif %}
+   ```
+3. **For dark-themed sections** (Purple scheme), use `logo-white.svg`:
+   ```liquid
+   <img src="{{ 'logo-white.svg' | asset_url }}" alt="{{ shop.name }}" width="200">
    ```
 
 ### Logo sizing (already configured)
@@ -383,9 +419,13 @@ When you start a new session, before taking any design/code action:
 
 ## 17. Open Items / TODOs for Future Sessions
 
-- [x] ~~Add logo files to `assets/`~~ ✅ Done: `logo.png`, `logo-white.png`, `favicon.png` committed (downloaded from public CDN).
-- [ ] Replace `assets/logo-white.png` with a hand-designed white/inverted version (current file is auto-derived from the alpha channel and the brush frame dominates).
-- [ ] Add an SVG version of the logo (`logo.svg`) for perfect scaling and smaller file size. PNG is fine for now at 933×613, but SVG is ideal for a 42px render target.
+- [x] ~~Add logo files to `assets/`~~ ✅ Done
+- [x] ~~Add an SVG version of the logo~~ ✅ Done — `logo.svg` with brand gradient, `logo-white.svg`, `logo-mono.svg`
+- [x] ~~Proper white/inverted logo~~ ✅ Done — rendered from SVG, crisp at 1866×1226
+- [x] ~~Full favicon set (16/32/48/180/192/512 + .ico multi-res)~~ ✅ Done
+- [x] ~~OG / social share image~~ ✅ Done — `og-image.png` 1200×630
+- [ ] Wire `favicon.ico` + `apple-touch-icon.png` + `og-image.png` into `<head>` of `layout/theme.liquid` (currently only `settings.favicon` is referenced).
+- [ ] The vectorized SVG is a silhouette (single path). If the user has the original Illustrator / Figma source, replace `logo.svg` with that for cleaner curves and separate layers.
 - [ ] Create a `design/references/` folder with competitor mood board and hero inspiration.
 - [ ] Add `design/tokens.json` as a machine-readable export of §3, §4, §6.
 - [ ] Run Lighthouse post-deployment and fill in the "Current" column of the performance table.
