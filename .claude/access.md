@@ -29,6 +29,7 @@ Claude Code no es una cuenta con "permisos". Es una CLI que hereda el entorno de
 | **Vercel** | MCP | Deploys, logs, domains. |
 | **Canva** | MCP | Generar diseños, exportar assets, brand kits. |
 | **Google Calendar** | MCP | Agenda, eventos. |
+| **Shopify Dev MCP** | MCP (`mcp__shopify-dev__*`) | **Docs oficiales de Liquid + Admin/Storefront/Functions GraphQL + validación de theme (`validate_theme`) y de GraphQL. Verificado en vivo — puede auditar theme completo.** |
 | **Filesystem local** | Nativo | `Read`, `Write`, `Edit`, `Bash`. |
 | **Internet** | Nativo | `WebFetch`, `WebSearch`. |
 | **Sub-agentes** | `.claude/agents/*.md` | `code-reviewer`, `debugger`, `session-explorer`, `test-writer`. |
@@ -37,9 +38,8 @@ Claude Code no es una cuenta con "permisos". Es una CLI que hereda el entorno de
 
 | Servicio | Qué falta | Cómo resolverlo |
 |---|---|---|
-| **Shopify Dev MCP** (docs + Liquid schema) | Declarado en `.mcp.json`, pero el usuario debe aprobarlo la primera vez que Claude Code abra el repo | En Claude Code: responder "yes" al prompt cuando aparezca el MCP nuevo |
-| **Shopify Admin MCP** (leer/escribir productos, themes, colecciones) | Package NPM no instalado + tokens no puestos | Ver §3 abajo |
-| **Shopify CLI** (`shopify theme dev/push/pull`) | No instalado globalmente | `npm i -g @shopify/cli @shopify/theme` y después `shopify login --store tourinkohsamui.myshopify.com` |
+| **Shopify Admin MCP** (leer/escribir productos, themes, colecciones vía API) | Package NPM no instalado + tokens no puestos | Ver §3 abajo |
+| **Shopify CLI** (`shopify theme dev/push/pull`) | No instalado globalmente | `npm i -g @shopify/cli` y después `shopify login --store tourinkohsamui.myshopify.com` |
 
 ### ❌ No configurado (cosas que hoy Claude NO puede hacer)
 
@@ -104,12 +104,20 @@ Si responde con productos reales, está todo OK. Si dice "no tengo acceso", revi
 
 1. ¿Está en el repo? → `Glob`, `Grep`, `Read`
 2. ¿Está en el CDN público de Shopify? → `WebFetch` sobre `tourinkohsamui.com` o URLs `cdn.shopify.com/s/files/1/0708/1164/8194/...`
-3. ¿Está en la documentación de Shopify? → MCP `shopify-dev` (si activo) o `WebFetch` a `shopify.dev`
+3. ¿Está en la documentación de Shopify? → MCP `shopify-dev` con `learn_shopify_api` + `search_docs_chunks` (✅ activo)
 4. ¿Está en la Admin API? → MCP `shopify-admin` (si activo). Si NO está activo, leer §3 arriba y decirle al usuario qué le falta.
 5. ¿Está en Supabase/Vercel/Canva? → usar el MCP correspondiente
 6. ¿Está en la web pública? → `WebSearch` + `WebFetch`
 
 **Solo** si las 6 fallan, responder "no lo encuentro, pero para resolverlo hace falta X". Nunca dar "no" a secas.
+
+### Cómo usar el Shopify Dev MCP (workflow obligatorio)
+
+1. **Primera llamada siempre:** `learn_shopify_api` con `api: "liquid"` (o `admin`, `storefront-graphql`, `functions`, etc.). Devuelve un `conversationId` que hay que **reusar** en todas las llamadas siguientes.
+2. Para buscar docs: `search_docs_chunks(conversationId, prompt, api_name)`.
+3. **Al crear/editar archivos del theme:** correr `validate_theme` contra el path absoluto del repo + lista de archivos tocados. Devuelve errores de Theme Check con fix sugerido.
+4. Para GraphQL: `validate_graphql_codeblocks` antes de entregar cualquier query.
+5. Para componentes Polaris / UI extensions: `validate_component_codeblocks`.
 
 ---
 

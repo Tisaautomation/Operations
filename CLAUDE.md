@@ -441,6 +441,20 @@ When you start a new session, before taking any design/code action:
 - [ ] Run Lighthouse post-deployment and fill in the "Current" column of the performance table.
 - [ ] Configure production Google Maps + Mapbox keys in live store.
 
+### Theme Check findings (from `validate_theme` audit on 2026-04-12)
+
+Ran the official Shopify Dev MCP `validate_theme` tool. **7 of 14 files** passed cleanly. The remaining 7 have real issues to fix:
+
+- [ ] **`layout/theme.liquid`** — (a) 4× "Asset should be served by the Shopify CDN" (local assets referenced via `asset_url` OK, but check for hardcoded URLs). (b) 2× replace `stylesheet_tag` / `script_tag` with `preload_tag` filter. (c) 1× inline script without `defer`/`async`. (d) Missing snippets: `snippets/meta-tags.liquid`, `snippets/social-meta-tags.liquid`, `snippets/cart-drawer.liquid`. (e) Missing sections: `sections/header.liquid`, `sections/footer.liquid`. (f) 2× deprecated `img_url` filter — replace with `image_url`.
+- [ ] **`sections/hero-banner.liquid`** — missing `width`/`height` on `<img>`; 4× deprecated `img_url` → `image_url`.
+- [ ] **`sections/product-carousel.liquid`** — missing `width`/`height` on `<img>`; 1× `img_url` → `image_url`.
+- [ ] **`snippets/product-booking-form.liquid`** — hardcoded `/cart/add` → replace with `{{ routes.cart_add_url }}`.
+- [ ] **`snippets/product-schema.liquid`** — 2× `img_url` → `image_url`.
+- [ ] **`config/settings_schema.json`** — 2× "String is not a URI" (probably empty-string defaults on URL-type settings; either add a placeholder or change the setting type).
+- [x] ~~`sections/main-product.liquid`, `sections/feature-slides.liquid`, `snippets/product-map.liquid`, `snippets/location-picker.liquid`, `config/settings_data.json`, `templates/{index,product,collection}.json`~~ ✅ All passed cleanly.
+
+> Priority order: fix missing snippets/sections FIRST (site may 404 on header/footer), then `img_url → image_url` (easy global find/replace), then routes, then CDN/preload tuning.
+
 ---
 
 *Last updated by Claude session on branch `claude/mythos-claude-exploration-URYSR`.*
