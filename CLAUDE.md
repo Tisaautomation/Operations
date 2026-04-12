@@ -445,17 +445,54 @@ For any "I don't have access to X" situation, **check `.claude/access.md` before
 
 ---
 
+## 15b. Boot Commands — Fast Context Loading
+
+When the user says **"boot X"**, **"cargá X"**, **"load X context"**, or any similar variant, Claude MUST:
+
+1. **Immediately** read `boot/X.md` — do NOT ask for explanation first
+2. Respond with the file's **TL;DR + Current State + action menu** (in ≤30 seconds)
+3. Prompt with *"¿qué hacemos?"* — not with *"¿me explicás el dominio?"*
+
+### Available boots in this repo
+
+| Command | File | Covers |
+|---|---|---|
+| `boot booking` | `boot/booking.md` | Tour booking flow (WhatsApp + location picker + cart properties) |
+| `boot theme` | `boot/theme.md` | Shopify Horizon architecture, sections, snippets, performance |
+| `boot brand` | `boot/brand.md` | Colors, fonts, logos, voice/tone, CSS tokens |
+| `boot ops` | `boot/ops.md` | Deploy, CLI, env vars, credentials, MCPs |
+| `boot content` | `boot/content.md` | Collections, metafields, product catalog |
+| `boot marketing` | `boot/marketing.md` | ⚠️ Placeholder — lives in separate repo |
+| `boot accounting` | `boot/accounting.md` | ⚠️ Placeholder — lives in separate repo |
+
+### Rules
+
+1. **Boots are entry points**, not comprehensive docs. They LINK to authoritative sources, never DUPLICATE them.
+2. **If `boot/X.md` is missing** → list available boots (`ls boot/`) and ask which matches.
+3. **Never** ask the user to explain a domain that has a boot file.
+4. Every `boot/*.md` follows the **standard template** — see `boot/README.md` for the spec.
+5. **Keep boots < 200 lines.** If they grow past that, split into sub-boots (e.g. `boot/theme-sections.md`).
+
+### Creating a new boot
+
+See `boot/README.md` → "Creating a New Boot" for the step-by-step.
+
+---
+
 ## 16. Session Startup Checklist (for Claude)
 
 When you start a new session, before taking any design/code action:
 
 1. ✅ Read this file (you're already doing it).
 2. ✅ Check `git status` and `git branch --show-current`.
-3. ✅ If the user asks about branding/colors/fonts → answer from §3, §4, §6. Do not invent.
-4. ✅ If the user asks about logos → direct them to Shopify admin (§5). Do not hallucinate asset paths.
-5. ✅ If you're about to change a token (color, font, radius) → confirm with the user first.
-6. ✅ For every visual change, prefer editing CSS variables in `layout/theme.liquid:47-70` over hardcoding.
-7. ✅ Never push to `main`. Develop on the `claude/…` branch.
+3. ✅ **If the user says "boot X"** → jump to `boot/X.md` immediately (§15b).
+4. ✅ If the user asks about branding/colors/fonts → answer from §3, §4, §6. Do not invent.
+5. ✅ If the user asks about logos → check `assets/` and §5. Do not hallucinate asset paths.
+6. ✅ If you're about to change a token (color, font, radius) → confirm with the user first.
+7. ✅ For every visual change, prefer editing CSS variables in `layout/theme.liquid:47-70` over hardcoding.
+8. ✅ **Never push to `main` directly.** Work on a `claude/<topic>-<id>` branch (§12).
+9. ✅ **Never edit theme code based on linter output alone** — browser-test first (§12c).
+10. ✅ **Never give "I can't find X"** without running the 6-step search in `.claude/access.md §4`.
 
 ---
 

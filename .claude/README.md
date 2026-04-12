@@ -14,6 +14,16 @@ Operations/
 ├── 📋 .env.example                   ← env var template (copy to .env locally)
 ├── 🔌 .mcp.json                      ← declares MCP servers for this project
 │
+├── 🚀 boot/                          ← fast context loading per domain
+│   ├── README.md                     ← convention spec + index
+│   ├── booking.md                    ← "boot booking"   → tour booking system
+│   ├── theme.md                      ← "boot theme"     → Shopify Horizon arch
+│   ├── brand.md                      ← "boot brand"     → colors/fonts/logos
+│   ├── ops.md                        ← "boot ops"       → deploy/CLI/env/auth
+│   ├── content.md                    ← "boot content"   → collections/metafields
+│   ├── marketing.md                  ← "boot marketing" → ⚠️ separate repo
+│   └── accounting.md                 ← "boot accounting"→ ⚠️ separate repo
+│
 └── .claude/                          ← Claude-specific infrastructure
     │
     ├── 📖 README.md                  ← (you are here) index of this folder
@@ -37,6 +47,25 @@ Operations/
 | 2 | `CLAUDE.md` (this folder) | Know which sub-agent to trigger when | 30 sec |
 | 3 | `access.md` | Know what APIs / MCPs are available | 1 min |
 | 4 | `agents/*.md` | Only when actually using a sub-agent | on demand |
+
+---
+
+## 🚀 Boot Commands — Load Domain Context Fast
+
+Say any of these and any Claude immediately has the full domain context in 30 seconds:
+
+| Say this | Claude reads | What you get |
+|---|---|---|
+| `boot booking` | `../boot/booking.md` | Tour booking flow + action menu |
+| `boot theme` | `../boot/theme.md` | Theme architecture + what can be edited |
+| `boot brand` | `../boot/brand.md` | Colors, fonts, logos + usage patterns |
+| `boot ops` | `../boot/ops.md` | Deploy, CLI, env, credentials |
+| `boot content` | `../boot/content.md` | Collections, metafields, catalog |
+| `boot marketing` | `../boot/marketing.md` | ⚠️ *lives in separate repo* |
+| `boot accounting` | `../boot/accounting.md` | ⚠️ *lives in separate repo* |
+
+Full convention + how to add a new boot: [`../boot/README.md`](../boot/README.md).
+Rules: [`../CLAUDE.md` §15b](../CLAUDE.md).
 
 ---
 
@@ -89,12 +118,13 @@ Full detail in [`access.md`](access.md). Short version:
 | # | Rule | Enforced by |
 |---|---|---|
 | 1 | **🚨 Never change theme code based on linter/validator output alone — browser-test first. Production is at Lighthouse 97% and many "errors" are intentional optimizations.** | `../CLAUDE.md` §12c |
-| 2 | Never hardcode brand colors / fonts — use CSS variables | `../CLAUDE.md` §12 |
-| 3 | Never push to `main` without explicit approval | `../CLAUDE.md` §12 |
-| 4 | Never commit `.env`, tokens, or keys | `../.gitignore` |
-| 5 | Never give "I can't find X" without running the 6-step search | `access.md` §4 |
-| 6 | Never skip the session-explorer sub-agent on a greeting | `CLAUDE.md` (this folder) §1 |
-| 7 | Never modify Claude's global config (`~/.claude/settings.json`) | `access.md` §6 |
+| 2 | **🚀 When user says "boot X" → read `../boot/X.md` IMMEDIATELY. Never ask for explanation if a boot exists.** | `../CLAUDE.md` §15b |
+| 3 | Never hardcode brand colors / fonts — use CSS variables | `../CLAUDE.md` §12 |
+| 4 | Never push to `main` without explicit approval | `../CLAUDE.md` §12 |
+| 5 | Never commit `.env`, tokens, or keys | `../.gitignore` |
+| 6 | Never give "I can't find X" without running the 6-step search | `access.md` §4 |
+| 7 | Never skip the session-explorer sub-agent on a greeting | `CLAUDE.md` (this folder) §1 |
+| 8 | Never modify Claude's global config (`~/.claude/settings.json`) | `access.md` §6 |
 
 ---
 
