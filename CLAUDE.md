@@ -97,12 +97,33 @@ CSS variables exposed: `--font-heading`, `--font-body`, `--font-subheading`.
 
 ## 5. Logo & Visual Assets
 
-> ⚠️ **Logos are NOT stored in this repo.** They live in Shopify's Files CDN and are referenced via `settings.logo` and `settings.favicon` in Liquid.
+> ✅ **Local copies are now in `assets/`.** The canonical logo still lives in Shopify Files CDN (set via admin → `settings.logo` / `settings.favicon`), but local fallbacks are committed for design work, previews, and offline reference.
 
-### Where to find / set the logo
-- **Theme Settings → Header → Logo** (uploaded via Shopify admin)
-- Referenced in Liquid as: `{{ settings.logo | img_url: '200x' }}`
-- Structured data (Organization schema) pulls from `settings.logo` — see `layout/theme.liquid:185-186`
+### Local files (committed to this repo)
+
+| File | Size | Purpose | Notes |
+|---|---|---|---|
+| `assets/logo.png` | 933×613 RGBA | Full color brand logo — "TIK" wordmark + compass + circular brush frame, turquoise→purple gradient | Use on light backgrounds. Reference: `{{ 'logo.png' \| asset_url }}` |
+| `assets/logo-white.png` | 933×613 RGBA | White silhouette of the logo (auto-derived from alpha of logo.png) | Placeholder for dark backgrounds (Purple scheme). **Auto-generated — replace with a hand-designed white version when possible.** |
+| `assets/favicon.png` | 512×512 RGBA | Circular dark favicon with TIK mark | Reference: `{{ 'favicon.png' \| asset_url }}` |
+
+### Canonical source (Shopify CDN)
+Downloaded from tourinkohsamui.com's public CDN:
+- Logo: `https://cdn.shopify.com/s/files/1/0708/1164/8194/files/Purple_turquoise_3_af12013c-5f45-4a44-8d7f-fdafa45f02bb.png`
+- Favicon: `https://cdn.shopify.com/s/files/1/0708/1164/8194/files/TourInKohSamui-favicon.png`
+
+Shopify Files ID prefix for this store: `1/0708/1164/8194`.
+
+### Usage priority (in Liquid)
+1. **Prefer `settings.logo` / `settings.favicon`** — set via Shopify admin, editable by non-devs, already wired into `layout/theme.liquid:21, 185-186`.
+2. **Fallback to local `assets/logo.png`** if the admin setting is blank. Example:
+   ```liquid
+   {% if settings.logo %}
+     <img src="{{ settings.logo | img_url: '200x' }}" alt="{{ shop.name }}">
+   {% else %}
+     <img src="{{ 'logo.png' | asset_url }}" alt="{{ shop.name }}">
+   {% endif %}
+   ```
 
 ### Logo sizing (already configured)
 | Viewport | Height |
@@ -110,8 +131,11 @@ CSS variables exposed: `--font-heading`, `--font-body`, `--font-subheading`.
 | Desktop | 42px |
 | Mobile | 32px |
 
-### If you need the logo locally
-Ask the user to drop it in `assets/` (e.g. `logo.svg`, `logo-white.svg`, `favicon.png`). Then reference as `{{ 'logo.svg' | asset_url }}`.
+### Wordmark & mark
+- **Wordmark:** "TIK" in custom/Poppins-style bold, horizontally stacked with "TOURINKOHSAMUI.COM"
+- **Mark/icon:** 8-point compass rose ("north star")
+- **Container:** circular hand-drawn brush stroke
+- **Color treatment:** turquoise `#00CED1` → purple `#9370DB` gradient (matches the signature brand gradient, see §3)
 
 ### Social profiles (canonical)
 - Facebook: `https://facebook.com/tourinkohsamui`
@@ -359,7 +383,9 @@ When you start a new session, before taking any design/code action:
 
 ## 17. Open Items / TODOs for Future Sessions
 
-- [ ] Add logo files to `assets/` (`logo.svg`, `logo-white.svg`, `favicon.png`) so Claude can reference them locally.
+- [x] ~~Add logo files to `assets/`~~ ✅ Done: `logo.png`, `logo-white.png`, `favicon.png` committed (downloaded from public CDN).
+- [ ] Replace `assets/logo-white.png` with a hand-designed white/inverted version (current file is auto-derived from the alpha channel and the brush frame dominates).
+- [ ] Add an SVG version of the logo (`logo.svg`) for perfect scaling and smaller file size. PNG is fine for now at 933×613, but SVG is ideal for a 42px render target.
 - [ ] Create a `design/references/` folder with competitor mood board and hero inspiration.
 - [ ] Add `design/tokens.json` as a machine-readable export of §3, §4, §6.
 - [ ] Run Lighthouse post-deployment and fill in the "Current" column of the performance table.
