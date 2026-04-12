@@ -18,8 +18,8 @@
 | **Primary language** | English (site copy). User/owner communicates in Spanish. |
 | **Location** | Koh Samui, Thailand |
 | **Repo root** | `/home/user/Operations` |
-| **Default branch** | `main` |
-| **Active dev branch** | `claude/mythos-claude-exploration-URYSR` (current Claude session) |
+| **Default branch** | `main` ← **the canonical library. Every Claude session starts from `main` and branches off.** |
+| **Active dev branches** | `claude/<feature-name>-<random>` — short-lived, merge back to `main` when approved |
 
 ---
 
@@ -357,9 +357,27 @@ Both keys are empty by default in `settings_data.json` and must be configured in
 - Present tense, imperative: "Add WhatsApp field", not "Added".
 - Reference the file or feature area in the subject when useful.
 
-### Branching
-- Development happens on `claude/…` branches (current: `claude/mythos-claude-exploration-URYSR`).
-- Never push to `main` directly without explicit user approval.
+### Branching (canonical flow)
+
+`main` is the **single source of truth** — it's the library every Claude session reads from and contributes back to.
+
+**Flow for any new work:**
+```
+1. git checkout main
+2. git pull origin main                        # start from the latest library
+3. git checkout -b claude/<descriptive-name>    # dedicated branch for your task
+4. ... do the work, commit ...
+5. git push -u origin claude/<descriptive-name>
+6. Ask the user for approval → merge back to main (or open a PR if requested)
+```
+
+**Rules:**
+- **Never push to `main` directly** without explicit user approval for that specific merge.
+- **Never work on another session's `claude/*` branch** — each Claude gets its own.
+- **If `main` has moved** since you branched, rebase your branch on top of it before merging.
+- **Short-lived branches** — a `claude/*` branch should not live longer than one feature. Merge and delete.
+
+**Branch naming:** `claude/<topic>-<short-id>` — e.g. `claude/add-reviews-section-a1b2`, `claude/fix-booking-form-c3d4`.
 
 ### 12c. 🚨 Browser-Testing Rule (NON-NEGOTIABLE)
 
