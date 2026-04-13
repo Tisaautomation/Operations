@@ -13,7 +13,7 @@
 - ✅ 4 sub-agents available (`session-explorer`, `code-reviewer`, `debugger`, `test-writer`)
 - ⚠️ Shopify CLI NOT installed in this sandbox — user installs on their own machine
 - ⚠️ Shopify Admin MCP declared but not yet installed (needs token + package)
-- ❌ No Playwright MCP yet → cannot browser-test automatically (required per `CLAUDE.md §12c`)
+- ⚠️ **Playwright MCP declared** in `.mcp.json` — user needs to approve the prompt once + first-run downloads Chromium (~300MB). Once active, satisfies `CLAUDE.md §12c` browser-test rule.
 
 ## Key Files
 
@@ -40,8 +40,9 @@ User's local machine (your laptop)
          ↓ reads
     .mcp.json → prompts user → activates MCPs
          ↓
-    ACTIVE:  shopify-dev, github, supabase, vercel, canva, gcal
-    PENDING: shopify-admin (needs token), playwright (needs install)
+    ACTIVE (confirmed):  shopify-dev, github, supabase, vercel, canva, gcal
+    DECLARED (needs user approval on first open):  playwright
+    DECLARED + NEEDS TOKEN:                        shopify-admin
 ```
 
 ## What You Can Do Right Now
@@ -55,6 +56,13 @@ User's local machine (your laptop)
 - **Validate any theme file** → `mcp__shopify-dev__validate_theme`
 - **Learn a Shopify API** → `mcp__shopify-dev__learn_shopify_api` then `search_docs_chunks`
 - **Validate GraphQL** → `mcp__shopify-dev__validate_graphql_codeblocks`
+
+### Browser testing (after Playwright MCP is approved)
+- **Screenshot a URL** → `mcp__playwright__browser_take_screenshot`
+- **Navigate + inspect** → `mcp__playwright__browser_navigate` + `browser_snapshot`
+- **Simulate mobile viewport** → `browser_resize(375, 667)` (iPhone-ish)
+- **Test booking form end-to-end** → `browser_fill_form` + `browser_click`
+- **Full workflow** → see `.claude/access.md §3b`
 
 ### Git
 - **Start new work** → `git checkout main && git pull && git checkout -b claude/<topic>-<id>`

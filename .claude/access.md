@@ -40,12 +40,12 @@ Claude Code no es una cuenta con "permisos". Es una CLI que hereda el entorno de
 |---|---|---|
 | **Shopify Admin MCP** (leer/escribir productos, themes, colecciones vía API) | Package NPM no instalado + tokens no puestos | Ver §3 abajo |
 | **Shopify CLI** (`shopify theme dev/push/pull`) | No instalado globalmente | `npm i -g @shopify/cli` y después `shopify login --store tourinkohsamui.myshopify.com` |
+| **Playwright MCP** (browser automation — OBLIGATORIO para theme edits per §12c) | Declarado en `.mcp.json`, necesita aprobación del usuario + 1ª descarga de browser binaries (~300MB) | Ver §3b abajo |
 
 ### ❌ No configurado (cosas que hoy Claude NO puede hacer)
 
 | Capacidad | Qué haría falta | Prioridad |
 |---|---|---|
-| **Testear cambios en un navegador real (OBLIGATORIO antes de tocar el theme)** | Instalar Playwright MCP (`npx -y @executeautomation/playwright-mcp-server`) o similar. **Ver regla §12c en `../CLAUDE.md`.** | 🔥 **ALTA** — sin esto no se pueden aplicar cambios al theme con seguridad |
 | Editar productos / colecciones directamente desde la sesión | Shopify Admin API token en `.env` + MCP activo | Media |
 | Deploy del theme desde Claude | Shopify CLI instalado + `shopify login` | Media |
 | Acceder a Shopify Analytics | Shopify Admin API con scope `read_analytics` | Baja |
@@ -97,6 +97,62 @@ Si responde con productos reales, está todo OK. Si dice "no tengo acceso", revi
 - El MCP aparece activo en Claude Code (slash command `/mcp`)
 
 ---
+
+## 3b. Cómo activar Playwright MCP (browser testing)
+
+### Paso 1 — Confirmar Node.js 20+
+```bash
+node --version   # debe mostrar v20.x.x o superior
+```
+
+### Paso 2 — Abrir Claude Code en el repo
+Al detectar el `.mcp.json` actualizado, Claude Code va a promptear:
+> *"This project's .mcp.json declares 3 MCP servers (shopify-dev, shopify-admin, playwright). Enable?"*
+
+Aceptar. Playwright queda registrado.
+
+### Paso 3 (opcional pero recomendado) — Instalar manualmente desde CLI
+Si no aparece el prompt, corré:
+```bash
+claude mcp add playwright npx @playwright/mcp@latest
+```
+Esto persiste en `~/.claude.json` de tu usuario.
+
+### Paso 4 — Primera ejecución: Playwright descarga Chromium
+La primera vez que Claude invoque una herramienta de Playwright, el paquete descarga ~300MB de binarios de Chromium. Es **una sola vez por máquina**. Paciencia.
+
+### Paso 5 — Verificar
+En una sesión nueva, pedile a Claude:
+> *"Tomá un screenshot de tourinkohsamui.com"*
+
+Si responde con la imagen, está todo OK.
+
+### Workflow obligatorio (per `CLAUDE.md §12c`) — Browser-Test Before Commit
+
+Antes de aplicar cualquier cambio al theme:
+
+```
+1. Claude hace el cambio en un branch claude/*
+2. shopify theme push --unpublished          # deploy a un theme no publicado
+3. Playwright navega al preview URL:
+   mcp__playwright__browser_navigate(url: "<preview-url>")
+4. Playwright toma screenshot:
+   mcp__playwright__browser_take_screenshot()
+5. Claude compara visual antes/después contra producción
+6. Si todo OK → usuario aprueba → merge a main → publish
+7. Si algo cambió visualmente → revertir
+```
+
+### Herramientas que expone Playwright MCP (34 total)
+
+Las más usadas para nuestro caso:
+- `browser_navigate(url)` — ir a una URL
+- `browser_take_screenshot()` — captura
+- `browser_snapshot()` — accessibility tree (mejor que screenshot para ver estructura)
+- `browser_click(element)` — click en un elemento
+- `browser_fill_form(fields)` — llenar formulario (ideal para probar booking form)
+- `browser_resize(width, height)` — simular mobile viewport (375×667 para iPhone)
+- `browser_console_messages()` — ver errores de JS
 
 ## 4. Qué hacer si Claude dice "no encuentro X"
 

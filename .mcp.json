@@ -17,6 +17,14 @@
         "SHOPIFY_STORE_DOMAIN": "${SHOPIFY_STORE_DOMAIN}",
         "SHOPIFY_ADMIN_API_ACCESS_TOKEN": "${SHOPIFY_ADMIN_API_ACCESS_TOKEN}"
       }
+    },
+
+    "playwright": {
+      "_purpose": "Microsoft's official browser automation MCP. Required to satisfy the browser-testing rule (CLAUDE.md §12c) — lets Claude navigate pages, click elements, fill forms, take screenshots, and diff before/after theme changes. No credentials needed.",
+      "_docs": "https://github.com/microsoft/playwright-mcp",
+      "_install_note": "On first use, Playwright downloads browser binaries (~300MB for Chromium). This happens once per machine. Approve the prompt when Claude Code asks.",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
     }
   }
 }
