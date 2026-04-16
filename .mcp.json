@@ -1,16 +1,16 @@
 {
-  "_comment": "Project-level MCP server configuration for Claude Code. When a user opens this repo in Claude Code, Claude will prompt to enable these servers. Credentials are pulled from each user's local environment — never committed here.",
+  "_comment": "Project-level MCP server configuration for Claude Code. Credentials and paths come from the user's .env — never committed here.",
 
   "mcpServers": {
     "shopify-dev": {
-      "_purpose": "Official Shopify developer MCP — exposes Shopify theme Liquid docs, Admin/Storefront API schemas, and theme validation tools. No credentials required — it is read-only developer documentation.",
+      "_purpose": "Official Shopify developer MCP — Liquid docs, Admin/Storefront API schemas, theme validation. No credentials required.",
       "command": "npx",
       "args": ["-y", "@shopify/dev-mcp@latest"]
     },
 
     "shopify-admin": {
-      "_purpose": "Shopify Admin API access (read/write products, collections, themes). Requires SHOPIFY_STORE_DOMAIN and SHOPIFY_ADMIN_API_ACCESS_TOKEN in your local environment (.env). Install with: npm i -g @shopify/admin-api-mcp  OR  use the dev-mcp package if it includes admin tooling.",
-      "_status": "SCAFFOLD — user must install the server package and set env vars before enabling.",
+      "_purpose": "Shopify Admin API access. Requires SHOPIFY_STORE_DOMAIN and SHOPIFY_ADMIN_API_ACCESS_TOKEN in .env.",
+      "_status": "SCAFFOLD — needs token + package install.",
       "command": "npx",
       "args": ["-y", "@shopify/admin-api-mcp@latest"],
       "env": {
@@ -20,11 +20,18 @@
     },
 
     "playwright": {
-      "_purpose": "Microsoft's official browser automation MCP. Required to satisfy the browser-testing rule (CLAUDE.md §12c) — lets Claude navigate pages, click elements, fill forms, take screenshots, and diff before/after theme changes. No credentials needed.",
+      "_purpose": "Browser automation via the user's own Chrome + Profile 16. Because it reuses the existing profile, all logins (GYG, Shopify admin, etc.) are already saved — no password handling needed. See scripts/README.md and .claude/access.md §3b.",
       "_docs": "https://github.com/microsoft/playwright-mcp",
-      "_install_note": "On first use, Playwright downloads browser binaries (~300MB for Chromium). This happens once per machine. Approve the prompt when Claude Code asks.",
+      "_profile_note": "CHROME_USER_DATA_DIR and CHROME_PROFILE must be set in .env. Example values are in .env.example.",
+      "_important": "Close Google Chrome before starting this MCP — Chrome locks the profile directory when running. If Claude can't launch the browser, check that no Chrome window is open.",
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"]
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--browser", "chrome",
+        "--user-data-dir", "${CHROME_USER_DATA_DIR}",
+        "--profile", "${CHROME_PROFILE}"
+      ]
     }
   }
 }

@@ -98,34 +98,55 @@ Si responde con productos reales, está todo OK. Si dice "no tengo acceso", revi
 
 ---
 
-## 3b. Cómo activar Playwright MCP (browser testing)
+## 3b. Cómo activar Playwright MCP con Chrome Profile 16
 
-### Paso 1 — Confirmar Node.js 20+
+> 🎯 **Regla del proyecto:** El agente **siempre** abre el Chrome real del usuario con **Profile 16** — el profile dedicado a este proyecto. Todos los logins (GYG, Shopify admin, social, etc.) ya están guardados ahí. **Claude nunca maneja passwords.**
+
+### Paso 1 — Encontrar la ruta de tu Profile 16
+
+1. Abrí Chrome con tu Profile 16 activo
+2. Barra de direcciones: `chrome://version/`
+3. Buscá la línea **"Profile Path"** — ejemplo:
+   - macOS: `/Users/juan/Library/Application Support/Google/Chrome/Profile 16`
+   - Windows: `C:\Users\juan\AppData\Local\Google\Chrome\User Data\Profile 16`
+   - Linux: `/home/juan/.config/google-chrome/Profile 16`
+4. El padre = `CHROME_USER_DATA_DIR`, el último segmento (`Profile 16`) = `CHROME_PROFILE`
+
+### Paso 2 — Poner los valores en `.env`
+
+Copiá `.env.example` → `.env` y llenar:
 ```bash
-node --version   # debe mostrar v20.x.x o superior
+CHROME_USER_DATA_DIR=/Users/juan/Library/Application Support/Google/Chrome
+CHROME_PROFILE=Profile 16
 ```
 
-### Paso 2 — Abrir Claude Code en el repo
-Al detectar el `.mcp.json` actualizado, Claude Code va a promptear:
-> *"This project's .mcp.json declares 3 MCP servers (shopify-dev, shopify-admin, playwright). Enable?"*
+### Paso 3 — Abrir Claude Code en el repo (local, no web)
 
-Aceptar. Playwright queda registrado.
+Al detectar el `.mcp.json`, Claude Code promptea:
+> *"This project declares MCP servers: shopify-dev, shopify-admin, playwright. Enable?"*
 
-### Paso 3 (opcional pero recomendado) — Instalar manualmente desde CLI
-Si no aparece el prompt, corré:
-```bash
-claude mcp add playwright npx @playwright/mcp@latest
-```
-Esto persiste en `~/.claude.json` de tu usuario.
+Decí **Yes**. Playwright queda registrado y **usa tu Profile 16 automáticamente**.
 
-### Paso 4 — Primera ejecución: Playwright descarga Chromium
-La primera vez que Claude invoque una herramienta de Playwright, el paquete descarga ~300MB de binarios de Chromium. Es **una sola vez por máquina**. Paciencia.
+### Paso 4 — ANTES de cada sesión: cerrar Chrome
+
+⚠️ **OBLIGATORIO:** Chrome bloquea el directorio del profile mientras corre. Si hay una ventana de Chrome abierta, Playwright falla con `ProcessSingleton` error. Cerrá Chrome entero primero.
 
 ### Paso 5 — Verificar
-En una sesión nueva, pedile a Claude:
-> *"Tomá un screenshot de tourinkohsamui.com"*
+En una sesión nueva:
+> *"abrí el browser con Profile 16 y andá a supplier.getyourguide.com"*
 
-Si responde con la imagen, está todo OK.
+Debería aparecer una ventana de Chrome **visible en tu pantalla**, ya logueada en GYG.
+
+### Flujo con intervención humana (captcha / passwords que Claude no sabe)
+
+Cuando el agente encuentre un captcha / 2FA / password nuevo:
+1. Claude pausa y dice: *"necesito que hagas X en la ventana"*
+2. Vos clickeás / tipeás / resolvés en la ventana visible
+3. Me decís "seguí" y el agente retoma desde donde quedó
+
+### Sandbox fallback (cuando no podés correr local)
+
+Si estás en Claude web (sandbox de Anthropic), no hay acceso a tu Profile 16. El script `scripts/browser-test.js` detecta esto y cae a modo **sandbox** con Chromium headless — solo sirve para screenshots de páginas públicas (no logueadas). Ver `scripts/README.md`.
 
 ### Workflow obligatorio (per `CLAUDE.md §12c`) — Browser-Test Before Commit
 

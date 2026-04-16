@@ -58,11 +58,17 @@ User's local machine (your laptop)
 - **Validate GraphQL** → `mcp__shopify-dev__validate_graphql_codeblocks`
 
 ### Browser testing (after Playwright MCP is approved)
-- **Screenshot a URL** → `mcp__playwright__browser_take_screenshot`
-- **Navigate + inspect** → `mcp__playwright__browser_navigate` + `browser_snapshot`
-- **Simulate mobile viewport** → `browser_resize(375, 667)` (iPhone-ish)
-- **Test booking form end-to-end** → `browser_fill_form` + `browser_click`
-- **Full workflow** → see `.claude/access.md §3b`
+
+🎯 **Regla del proyecto:** el agente **siempre** abre Chrome con **Profile 16** (el profile dedicado a este proyecto) — todos los logins ya están guardados, Claude nunca maneja passwords. **Cerrá Chrome antes de cada sesión** (Chrome bloquea el profile dir).
+
+- **Abrir browser con Profile 16** → `mcp__playwright__browser_navigate(url)` (el MCP usa la config de `.mcp.json` + `CHROME_USER_DATA_DIR`/`CHROME_PROFILE` de `.env`)
+- **Screenshot** → `mcp__playwright__browser_take_screenshot`
+- **Navegar + inspeccionar** → `browser_navigate` + `browser_snapshot`
+- **Intervención humana** (captcha / 2FA / password desconocido): Claude pausa, vos resolvés en la ventana visible, decís "seguí"
+- **Simular mobile viewport** → `browser_resize({ width: 390, height: 844 })`
+- **Llenar form booking end-to-end** → `browser_fill_form` + `browser_click`
+- **Workflow completo** → `.claude/access.md §3b`
+- **Sandbox fallback** (cuando no corre local) → `node scripts/browser-test.js --sandbox`
 
 ### Git
 - **Start new work** → `git checkout main && git pull && git checkout -b claude/<topic>-<id>`
