@@ -85,8 +85,24 @@ console.log(`mode: ${mode}  |  url: ${URL_}`);
 
   const page = ctx.pages()[0] || await ctx.newPage();
 
+  // Resilient navigation: retry on transient 503 / sandbox-IP rate limits
+  // (Shopify edge sometimes 503s requests from datacenter IPs; that is NOT
+  // a customer-facing bug — never report it as one. See git log a4f0... for context.)
+  async function gotoWithRetry(url, attempts = 3) {
+    for (let i = 1; i <= attempts; i++) {
+      const resp = await page.goto(url, { waitUntil: 'load', timeout: 45000 }).catch(e => ({ _err: e.message }));
+      const status = resp && !resp._err ? resp.status() : null;
+      if (status && status < 400) return resp;
+      const errorPage = await page.evaluate(() => /there was a problem loading|503/i.test(document.title + document.body.textContent.slice(0, 200))).catch(() => false);
+      if (status && status < 500 && !errorPage) return resp; // 4xx is real, not transient
+      console.log(`  ⚠ attempt ${i}/${attempts}: status=${status || 'err'} ${errorPage ? '(error page)' : ''} — retrying in ${i * 2}s`);
+      if (i < attempts) await page.waitForTimeout(i * 2000);
+    }
+    throw new Error(`Failed after ${attempts} attempts (likely transient 503 from sandbox IP, not a real bug)`);
+  }
+
   console.log('→ navigating…');
-  await page.goto(URL_, { waitUntil: 'load', timeout: 45000 });
+  await gotoWithRetry(URL_);
   await page.waitForTimeout(2000);
   console.log(`  title: ${await page.title()}`);
   console.log(`  url:   ${page.url()}`);
